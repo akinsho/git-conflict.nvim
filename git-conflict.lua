@@ -52,8 +52,8 @@ local function set_label_highlights(current, incoming)
   local incoming_color = api.nvim_get_hl_by_name(incoming, true)
   local current_label_bg = color.shade_color(current_color.background, -10)
   local incoming_label_bg = color.shade_color(incoming_color.background, -10)
-  api.nvim_set_hl(0, CURRENT_LABEL_HL, { background = current_label_bg })
-  api.nvim_set_hl(0, INCOMING_LABEL_HL, { background = incoming_label_bg })
+  api.nvim_set_hl(0, CURRENT_LABEL_HL, { background = current_label_bg, bold = true })
+  api.nvim_set_hl(0, INCOMING_LABEL_HL, { background = incoming_label_bg, bold = true })
 end
 
 ---Highlight each part of a git conflict i.e. the incoming changes vs the current/HEAD changes
