@@ -62,32 +62,38 @@ end
 local function highlight_conflicts(positions, config)
   local bufnr = api.nvim_get_current_buf()
   api.nvim_buf_clear_namespace(bufnr, NAMESPACE, 0, -1)
-  local current_start = positions.current.range_start
-  local current_end = positions.current.range_end
-  local incoming_start = positions.incoming.range_start
-  local incoming_end = positions.incoming.range_end
 
-  draw_section_label(bufnr, CURRENT_LABEL_HL, '>>>>>>>>> Current changes', current_start)
-  hl_range(bufnr, config.highlights.current, current_start, current_end + 1)
-  hl_range(bufnr, config.highlights.incoming, incoming_start, incoming_end)
-  draw_section_label(bufnr, INCOMING_LABEL_HL, 'Incoming changes <<<<<<<<', incoming_end)
+  for _, position in ipairs(positions) do
+    local current_start = position.current.range_start
+    local current_end = position.current.range_end
+    local incoming_start = position.incoming.range_start
+    local incoming_end = position.incoming.range_end
+    draw_section_label(bufnr, CURRENT_LABEL_HL, '>>>>>>>>> Current changes', current_start)
+    hl_range(bufnr, config.highlights.current, current_start, current_end + 1)
+    hl_range(bufnr, config.highlights.incoming, incoming_start, incoming_end)
+    draw_section_label(bufnr, INCOMING_LABEL_HL, 'Incoming changes <<<<<<<<', incoming_end)
+  end
 end
 
-local function check_for_conflicts(bufnr)
-  local positions = { current = {}, incoming = {} }
+local function check_for_conflicts(lines)
+  local positions = {}
   local has_conflict = false
-  for index, line in ipairs(api.nvim_buf_get_lines(bufnr, 0, -1, false)) do
+  local position
+  for index, line in ipairs(lines) do
     local lnum = index - 1
     if line:match(conflict_start) then
+      position = { current = {}, incoming = {} }
       has_conflict = true
-      positions.current.range_start = lnum
+      position.current.range_start = lnum
     end
     if line:match(conflict_middle) then
-      positions.current.range_end = lnum - 1
-      positions.incoming.range_start = lnum + 1
+      position.current.range_end = lnum - 1
+      position.incoming.range_start = lnum + 1
     end
     if line:match(conflict_end) then
-      positions.incoming.range_end = lnum
+      position.incoming.range_end = lnum
+      positions[#positions + 1] = position
+      position = nil
     end
   end
   return has_conflict, positions
@@ -101,7 +107,8 @@ local function attach(config)
     or (visited_buffers[cur_buf] and visited_buffers[cur_buf] ~= vim.b.changedtick)
   then
     visited_buffers[cur_buf] = vim.b.changedtick
-    local has_conflict, positions = check_for_conflicts(bufnr)
+    local lines = api.nvim_buf_get_lines(bufnr, 0, -1, false)
+    local has_conflict, positions = check_for_conflicts(lines)
     if has_conflict then
       highlight_conflicts(positions, config)
     end
