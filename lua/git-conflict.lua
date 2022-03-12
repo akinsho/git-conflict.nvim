@@ -102,11 +102,10 @@ local function draw_section_label(bufnr, hl_group, label, lnum)
 end
 
 ---Derive the colour of the section label highlights based on each sections highlights
----@param current string
----@param incoming string
-local function set_label_highlights(current, incoming)
-  local current_color = api.nvim_get_hl_by_name(current, true)
-  local incoming_color = api.nvim_get_hl_by_name(incoming, true)
+---@param highlights ConflictHighlights
+local function set_highlights(highlights)
+  local current_color = api.nvim_get_hl_by_name(highlights.current, true)
+  local incoming_color = api.nvim_get_hl_by_name(highlights.incoming, true)
   local current_label_bg = color.shade_color(current_color.background, -10)
   local incoming_label_bg = color.shade_color(incoming_color.background, -10)
   api.nvim_set_hl(0, CURRENT_LABEL_HL, { background = current_label_bg, bold = true })
@@ -249,7 +248,7 @@ end
 function M.setup(user_config)
   config = vim.tbl_deep_extend('force', config, user_config or {})
 
-  set_label_highlights(config.highlights.current, config.highlights.incoming)
+  set_highlights(config.highlights)
 
   local id = api.nvim_create_augroup(AUGROUP_NAME, { clear = true })
   api.nvim_create_autocmd('BufEnter', {
