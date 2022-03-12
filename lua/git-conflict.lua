@@ -1,7 +1,6 @@
 local M = {}
 
 local api = vim.api
-local fn = vim.fn
 
 local color = require('git-conflict.colors')
 
@@ -51,6 +50,13 @@ local visited_buffers = {}
 ---@return string[]
 local function get_buf_lines(start, _end, buf)
   return api.nvim_buf_get_lines(buf or 0, start, _end, false)
+end
+
+---Get cursor row and column as (1, 0) based
+---@param win_id number?
+---@return number, number
+local function get_cursor_pos(win_id)
+  return unpack(api.nvim_win_get_cursor(win_id or 0))
 end
 
 ---Add the positions to the buffer in our in memory buffer list
@@ -203,7 +209,7 @@ local function get_current_position(bufnr)
   if not match then
     return
   end
-  local line = fn.line('.')
+  local line = get_cursor_pos()
   for range, position in pairs(match.positions) do
     if type(range) == 'table' and range[1] <= line and range[2] >= line then
       return position
