@@ -33,6 +33,7 @@ local conflict_end = '^>>>>>>>'
 -----------------------------------------------------------------------------//
 
 local config = {
+  disable_diagnostics = true,
   highlights = {
     current = 'DiffAdd',
     incoming = 'DiffText',
@@ -201,12 +202,27 @@ local function get_current_position(bufnr)
   end
 end
 
+---@param bufnr number
+---@param has_conflict boolean
+local function toggle_diagnostics(bufnr, has_conflict)
+  if has_conflict then
+    vim.diagnostic.disable(bufnr)
+  else
+    vim.diagnostic.enable(bufnr)
+  end
+end
+
+---Get the conflict marker positions for a buffer if any and update the buffers state
+---@param bufnr number
 local function parse_buffer(bufnr)
   local lines = get_buf_lines(0, -1, bufnr)
   local has_conflict, positions = detect_conflicts(lines)
   if has_conflict then
     highlight_conflicts(positions, lines)
     update_visited_buffers(api.nvim_buf_get_name(bufnr), positions)
+  end
+  if config.disable_diagnostics then
+    toggle_diagnostics(bufnr, has_conflict)
   end
 end
 
@@ -225,6 +241,8 @@ local function attach()
   end
 end
 
+---Select the changes to keep
+---@param side "'ours'"|"'theirs'"|"'both'"
 function M.choose(side)
   local position = get_current_position(api.nvim_get_current_buf())
   if not position then
