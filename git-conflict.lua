@@ -5,11 +5,12 @@ local fn = vim.fn
 
 local color = require('git-conflict.colors')
 
+local SIDES = { ours = 'ours', theirs = 'theirs' }
 local AUGROUP_NAME = 'GitConflictCommands'
-local NAMESPACE = api.nvim_create_namespace('git-conflict')
-local PRIORITY = vim.highlight.priorities.user
 local CURRENT_LABEL_HL = 'GitConflictCurrentLabel'
 local INCOMING_LABEL_HL = 'GitConflictIncomingLabel'
+local NAMESPACE = api.nvim_create_namespace('git-conflict')
+local PRIORITY = vim.highlight.priorities.user
 
 local conflict_start = '^<<<<<<<'
 local conflict_middle = '^======='
@@ -122,19 +123,25 @@ local function detect_conflicts(lines)
     local lnum = index - 1
     if line:match(conflict_start) then
       has_start = true
-      position = { current = {}, incoming = {}, middle = {} }
-      position.current.range_start = lnum
+      position = {
+        current = { range_start = lnum, content_start = lnum + 1 },
+        middle = {},
+        incoming = {},
+      }
     end
     if has_start and line:match(conflict_middle) then
       has_middle = true
       position.middle.range_start = lnum
       position.middle.range_end = lnum + 1
       position.current.range_end = lnum - 1
+      position.current.content_end = lnum - 1
       position.incoming.range_start = lnum + 1
+      position.incoming.content_start = lnum + 1
     end
     if has_start and has_middle and line:match(conflict_end) then
       has_end = true
       position.incoming.range_end = lnum
+      position.incoming.content_end = lnum - 1
       positions[#positions + 1] = position
       has_conflict = has_start and has_middle and has_end
 
@@ -162,23 +169,6 @@ local function get_current_position(bufnr)
   end
 end
 
-function M.choose(side)
-  local pos_start, pos_end
-  local position = get_current_position(api.nvim_get_current_buf())
-  if not position then
-    return
-  end
-  if side == 'ours' then
-    pos_start = position.current.range_start
-    pos_end = position.current.range_end
-  else
-    pos_start = position.incoming.range_start
-    pos_end = position.incoming.range_end
-  end
-  api.nvim_buf_set_lines(0, pos_start, pos_end, false, {})
-  api.nvim_buf_set_lines(0, position.middle.range_start, position.middle.range_end, false, {})
-end
-
 local function parse_buffer(bufnr)
   local lines = api.nvim_buf_get_lines(bufnr, 0, -1, false)
   local has_conflict, positions = detect_conflicts(lines)
@@ -201,6 +191,29 @@ local function attach()
     visited_buffers[cur_buf].tick = vim.b.changedtick
     parse_buffer(bufnr)
   end
+end
+
+function M.choose(side)
+  local position = get_current_position(api.nvim_get_current_buf())
+  if not position then
+    return
+  end
+  local pos_start, pos_end, content_start, content_end
+  if side == SIDES.ours then
+    pos_start = position.current.range_start - 1
+    pos_start = pos_start < 0 and 0 or pos_start
+    pos_end = position.middle.range_end + 1
+    content_start = position.current.content_start
+    content_end = position.current.content_end
+  else
+    pos_start = position.middle.range_start
+    pos_end = position.incoming.range_end + 1
+    content_start = position.incoming.content_start
+    content_end = position.incoming.content_end
+  end
+  local lines = api.nvim_buf_get_lines(0, content_start, content_end + 1, false)
+  api.nvim_buf_set_lines(0, pos_start, pos_end, false, lines)
+  parse_buffer(0)
 end
 
 function M.clear()
