@@ -14,9 +14,28 @@ local conflict_start = '^<<<<<<<'
 local conflict_middle = '^======='
 local conflict_end = '^>>>>>>>'
 
+local config = {
+  highlights = {
+    current = 'DiffAdd',
+    incoming = 'DiffText',
+  },
+}
+
 -- Buffers that have been previously checked for conflicts and the saved tick at the time we last
 -- checked
 local visited_buffers = {}
+
+---Add the positions to the buffer in our in memory buffer list
+---positions are keyed by a list of range start and end for each mark
+---@param buf number
+---@param positions table[]
+local function update_visited_buffers(buf, positions)
+  local buf_positions = {}
+  visited_buffers[buf].positions = buf_positions
+  for _, pos in ipairs(positions) do
+    buf_positions[{ pos.current.range_start, pos.incoming.range_end }] = pos
+  end
+end
 
 ---Set an extmark for each section of the git conflict
 ---@param bufnr number
@@ -58,8 +77,8 @@ end
 
 ---Highlight each part of a git conflict i.e. the incoming changes vs the current/HEAD changes
 ---@param positions table
----@param config table
-local function highlight_conflicts(positions, config)
+---@param lines string[]
+local function highlight_conflicts(positions, lines)
   local bufnr = api.nvim_get_current_buf()
   api.nvim_buf_clear_namespace(bufnr, NAMESPACE, 0, -1)
 
@@ -99,7 +118,6 @@ local function check_for_conflicts(lines)
   return has_conflict, positions
 end
 
-local function attach(config)
   local bufnr = api.nvim_get_current_buf()
   local cur_buf = api.nvim_buf_get_name(bufnr)
   if
@@ -115,22 +133,16 @@ local function attach(config)
   end
 end
 
-function M.setup()
-  local config = {
-    highlights = {
-      current = 'DiffAdd',
-      incoming = 'DiffText',
-    },
-  }
+function M.setup(user_config)
+  config = vim.tbl_deep_extend('force', config, user_config or {})
+
   set_label_highlights(config.highlights.current, config.highlights.incoming)
 
   local id = api.nvim_create_augroup(AUGROUP_NAME, { clear = true })
   api.nvim_create_autocmd('BufEnter', {
     group = id,
     pattern = '*',
-    callback = function()
-      attach(config)
-    end,
+    callback = attach,
   })
 end
 
