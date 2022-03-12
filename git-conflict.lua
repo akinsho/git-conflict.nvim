@@ -43,8 +43,9 @@ end
 ---@param hl string
 ---@param range_start number
 ---@param range_end number
+---@return number extmark_id
 local function hl_range(bufnr, hl, range_start, range_end)
-  api.nvim_buf_set_extmark(bufnr, NAMESPACE, range_start, 0, {
+  return api.nvim_buf_set_extmark(bufnr, NAMESPACE, range_start, 0, {
     hl_group = hl,
     hl_eol = true,
     hl_mode = 'combine',
@@ -63,9 +64,10 @@ end
 ---@param hl_group string
 ---@param label string
 ---@param lnum number
+---@return number extmark id
 local function draw_section_label(bufnr, hl_group, label, lnum)
   local remaining_space = api.nvim_win_get_width(0) - api.nvim_strwidth(label)
-  api.nvim_buf_set_extmark(bufnr, NAMESPACE, lnum, 0, {
+  return api.nvim_buf_set_extmark(bufnr, NAMESPACE, lnum, 0, {
     hl_group = hl_group,
     virt_text = { { label .. string.rep(' ', remaining_space), hl_group } },
     virt_text_pos = 'overlay',
@@ -101,10 +103,15 @@ local function highlight_conflicts(positions, lines)
     local current_label = lines[current_start + 1] .. ' (Current changes)'
     local incoming_label = lines[incoming_end + 1] .. ' (Incoming changes)'
 
-    draw_section_label(bufnr, CURRENT_LABEL_HL, current_label, current_start)
-    hl_range(bufnr, config.highlights.current, current_start, current_end + 1)
-    hl_range(bufnr, config.highlights.incoming, incoming_start, incoming_end)
-    draw_section_label(bufnr, INCOMING_LABEL_HL, incoming_label, incoming_end)
+    local curr_label_id = draw_section_label(bufnr, CURRENT_LABEL_HL, current_label, current_start)
+    local curr_id = hl_range(bufnr, config.highlights.current, current_start, current_end + 1)
+    local inc_id = hl_range(bufnr, config.highlights.incoming, incoming_start, incoming_end)
+    local inc_label_id = draw_section_label(bufnr, INCOMING_LABEL_HL, incoming_label, incoming_end)
+
+    position.marks = {
+      current = { label = curr_label_id, content = curr_id },
+      incoming = { label = inc_label_id, content = inc_id },
+    }
   end
 end
 
