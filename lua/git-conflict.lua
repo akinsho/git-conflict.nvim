@@ -303,6 +303,8 @@ function M.choose(side)
   local pos_end = position.incoming.range_end + 1
 
   api.nvim_buf_set_lines(0, pos_start, pos_end, false, lines)
+  api.nvim_buf_del_extmark(0, NAMESPACE, position.marks.incoming.label)
+  api.nvim_buf_del_extmark(0, NAMESPACE, position.marks.current.label)
   parse_buffer(bufnr)
 end
 
