@@ -101,6 +101,14 @@ local function draw_section_label(bufnr, hl_group, label, lnum)
   })
 end
 
+local function set_commands()
+  vim.cmd([[
+    command! GitConflictChooseOurs lua require('git-conflict').choose('ours')
+    command! GitConflictChooseTheirs lua require('git-conflict').choose('theirs')
+    command! GitConflictChooseBoth lua require('git-conflict').choose('both')
+  ]])
+end
+
 ---Derive the colour of the section label highlights based on each sections highlights
 ---@param highlights ConflictHighlights
 local function set_highlights(highlights)
@@ -249,6 +257,7 @@ function M.setup(user_config)
   config = vim.tbl_deep_extend('force', config, user_config or {})
 
   set_highlights(config.highlights)
+  set_commands()
 
   local id = api.nvim_create_augroup(AUGROUP_NAME, { clear = true })
   api.nvim_create_autocmd('BufEnter', {
