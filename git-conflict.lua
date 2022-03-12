@@ -5,7 +5,11 @@ local fn = vim.fn
 
 local color = require('git-conflict.colors')
 
-local SIDES = { ours = 'ours', theirs = 'theirs' }
+local SIDES = {
+  ours = 'ours',
+  theirs = 'theirs',
+  both = 'both',
+}
 local AUGROUP_NAME = 'GitConflictCommands'
 local CURRENT_LABEL_HL = 'GitConflictCurrentLabel'
 local INCOMING_LABEL_HL = 'GitConflictIncomingLabel'
@@ -26,6 +30,15 @@ local config = {
 -- Buffers that have been previously checked for conflicts and the saved tick at the time we last
 -- checked
 local visited_buffers = {}
+
+---Wrapper around `api.nvim_buf_get_lines` which defaults to the current buffer
+---@param start number
+---@param _end number
+---@param buf number
+---@return string[]
+local function get_buf_lines(start, _end, buf)
+  return api.nvim_buf_get_lines(buf or 0, start, _end, false)
+end
 
 ---Add the positions to the buffer in our in memory buffer list
 ---positions are keyed by a list of range start and end for each mark
@@ -170,7 +183,7 @@ local function get_current_position(bufnr)
 end
 
 local function parse_buffer(bufnr)
-  local lines = api.nvim_buf_get_lines(bufnr, 0, -1, false)
+  local lines = get_buf_lines(0, -1, bufnr)
   local has_conflict, positions = detect_conflicts(lines)
   if has_conflict then
     highlight_conflicts(positions, lines)
@@ -198,14 +211,21 @@ function M.choose(side)
   if not position then
     return
   end
-  local data = side == SIDES.ours and position.current or position.incoming
-  local content_start = data.content_start
-  local content_end = data.content_end
+  local lines = {}
+  if side == SIDES.ours or side == SIDES.theirs then
+    local data = side == SIDES.ours and position.current or position.incoming
+    lines = get_buf_lines(data.content_start, data.content_end + 1)
+  elseif side == SIDES.both then
+    local first = get_buf_lines(position.current.content_start, position.current.content_end + 1)
+    local second = get_buf_lines(position.incoming.content_start, position.incoming.content_end + 1)
+    lines = vim.list_extend(first, second)
+  else
+    return
+  end
 
   local pos_start = position.current.range_start < 0 and 0 or position.current.range_start
   local pos_end = position.incoming.range_end + 1
 
-  local lines = api.nvim_buf_get_lines(0, content_start, content_end + 1, false)
   api.nvim_buf_set_lines(0, pos_start, pos_end, false, lines)
   parse_buffer(0)
 end
