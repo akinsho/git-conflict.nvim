@@ -52,9 +52,18 @@ local function hl_range(bufnr, hl, range_start, range_end)
   })
 end
 
+---Add highlights and additional data to each section heading of the conflict marker
+---These works by covering the underlying text with an extmark that contains the same information
+---with some extra detail appended.
+---TODO: ideally this could be done by using virtual text at the EOL and highlighting the
+---background but this doesn't work and currently this is done by filling the rest of the line with
+---empty space and overlaying the line content
+---@param bufnr number
+---@param hl_group string
+---@param label string
+---@param lnum number
 local function draw_section_label(bufnr, hl_group, label, lnum)
-  local win_width = api.nvim_win_get_width(0)
-  local remaining_space = win_width - #label
+  local remaining_space = api.nvim_win_get_width(0) - api.nvim_strwidth(label)
   api.nvim_buf_set_extmark(bufnr, NAMESPACE, lnum, 0, {
     hl_group = hl_group,
     virt_text = { { label .. string.rep(' ', remaining_space), hl_group } },
@@ -87,10 +96,14 @@ local function highlight_conflicts(positions, lines)
     local current_end = position.current.range_end
     local incoming_start = position.incoming.range_start
     local incoming_end = position.incoming.range_end
-    draw_section_label(bufnr, CURRENT_LABEL_HL, '>>>>>>>>> Current changes', current_start)
+    -- Add one since the index access in lines is 1 based
+    local current_label = lines[current_start + 1] .. ' (Current changes)'
+    local incoming_label = lines[incoming_end + 1] .. ' (Incoming changes)'
+
+    draw_section_label(bufnr, CURRENT_LABEL_HL, current_label, current_start)
     hl_range(bufnr, config.highlights.current, current_start, current_end + 1)
     hl_range(bufnr, config.highlights.incoming, incoming_start, incoming_end)
-    draw_section_label(bufnr, INCOMING_LABEL_HL, 'Incoming changes <<<<<<<<', incoming_end)
+    draw_section_label(bufnr, INCOMING_LABEL_HL, incoming_label, incoming_end)
   end
 end
 
