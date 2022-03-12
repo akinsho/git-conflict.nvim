@@ -179,6 +179,12 @@ local function highlight_conflicts(positions, lines)
   end
 end
 
+---Iterate through the buffer line by line checking there is a matching conflict marker
+---when we find a starting mark we collect the position details and add it to a list of positions
+---@param lines string[]
+---@return boolean
+---@return ConflictPosition[]
+---@return table<number, boolean>
 local function detect_conflicts(lines)
   local positions = {}
   -- A mapping of line number to bool for lines that have conflicts on them
