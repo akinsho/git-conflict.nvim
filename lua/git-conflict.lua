@@ -76,15 +76,16 @@ end
 ---@param positions ConflictPosition[]
 ---@param conflicts table<string, boolean>
 local function update_visited_buffers(buf, positions, conflicts)
-  if not positions or #positions < 1 then
-    visited_buffers[buf] = { tick = vim.b.changedtick }
-    return
-  end
-  local buf_positions = {}
-  visited_buffers[buf].positions = buf_positions
-  visited_buffers[buf].lines = conflicts
-  for _, pos in ipairs(positions) do
-    buf_positions[{ pos.current.range_start, pos.incoming.range_end }] = pos
+  local name = api.nvim_buf_get_name(buf)
+  if not positions then
+    visited_buffers[name] = { tick = vim.b.changedtick, positions = {}, lines = {} }
+  else
+    local buf_positions = {}
+    visited_buffers[name].positions = buf_positions
+    visited_buffers[name].lines = conflicts
+    for _, pos in ipairs(positions) do
+      buf_positions[{ pos.current.range_start, pos.incoming.range_end }] = pos
+    end
   end
 end
 
@@ -220,7 +221,7 @@ end
 ---@param bufnr number
 ---@return table?
 local function get_current_position(bufnr)
-  local match = visited_buffers[bufnr]
+  local match = visited_buffers[api.nvim_buf_get_name(bufnr)]
   if not match then
     return
   end
@@ -258,19 +259,20 @@ end
 
 local function attach()
   local bufnr = api.nvim_get_current_buf()
-  if
-    not visited_buffers[bufnr]
-    or (visited_buffers[bufnr] and visited_buffers[bufnr].tick ~= vim.b.changedtick)
-  then
-    update_visited_buffers(bufnr)
-    parse_buffer(bufnr)
+  local name = api.nvim_buf_get_name(bufnr)
+  if visited_buffers[name] and visited_buffers[name].tick == vim.b[bufnr].changedtick then
+    return
   end
+  update_visited_buffers(bufnr)
+  parse_buffer(bufnr)
+end
 end
 
 ---Select the changes to keep
 ---@param side "'ours'"|"'theirs'"|"'both'"
 function M.choose(side)
-  local position = get_current_position(api.nvim_get_current_buf())
+  local bufnr = api.nvim_get_current_buf()
+  local position = get_current_position(bufnr)
   if not position then
     return
   end
@@ -290,7 +292,7 @@ function M.choose(side)
   local pos_end = position.incoming.range_end + 1
 
   api.nvim_buf_set_lines(0, pos_start, pos_end, false, lines)
-  parse_buffer(0)
+  parse_buffer(bufnr)
 end
 
 function M.clear()
