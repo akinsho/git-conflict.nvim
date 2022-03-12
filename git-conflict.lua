@@ -162,9 +162,9 @@ local function get_current_position(bufnr)
     return
   end
   local line = fn.line('.')
-  for k, v in pairs(match.positions) do
-    if type(k) == 'table' and k[1] <= line and k[2] >= line then
-      return v
+  for range, position in pairs(match.positions) do
+    if type(range) == 'table' and range[1] <= line and range[2] >= line then
+      return position
     end
   end
 end
