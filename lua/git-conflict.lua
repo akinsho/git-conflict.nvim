@@ -74,8 +74,12 @@ end
 ---positions are keyed by a list of range start and end for each mark
 ---@param buf number
 ---@param positions ConflictPosition[]
----@param conflicts table<number, boolean>
+---@param conflicts table<string, boolean>
 local function update_visited_buffers(buf, positions, conflicts)
+  if not positions or #positions < 1 then
+    visited_buffers[buf] = { tick = vim.b.changedtick }
+    return
+  end
   local buf_positions = {}
   visited_buffers[buf].positions = buf_positions
   visited_buffers[buf].lines = conflicts
@@ -216,7 +220,7 @@ end
 ---@param bufnr number
 ---@return table?
 local function get_current_position(bufnr)
-  local match = visited_buffers[api.nvim_buf_get_name(bufnr)]
+  local match = visited_buffers[bufnr]
   if not match then
     return
   end
@@ -243,9 +247,9 @@ end
 local function parse_buffer(bufnr)
   local lines = get_buf_lines(0, -1, bufnr)
   local has_conflict, positions, line_conflicts = detect_conflicts(lines)
+  update_visited_buffers(bufnr, positions, line_conflicts)
   if has_conflict then
     highlight_conflicts(positions, lines)
-    update_visited_buffers(api.nvim_buf_get_name(bufnr), positions, line_conflicts)
   end
   if config.disable_diagnostics then
     toggle_diagnostics(bufnr, has_conflict)
@@ -254,15 +258,11 @@ end
 
 local function attach()
   local bufnr = api.nvim_get_current_buf()
-  local cur_buf = api.nvim_buf_get_name(bufnr)
   if
-    not visited_buffers[cur_buf]
-    or (visited_buffers[cur_buf] and visited_buffers[cur_buf].tick ~= vim.b.changedtick)
+    not visited_buffers[bufnr]
+    or (visited_buffers[bufnr] and visited_buffers[bufnr].tick ~= vim.b.changedtick)
   then
-    if not visited_buffers[cur_buf] then
-      visited_buffers[cur_buf] = {}
-    end
-    visited_buffers[cur_buf].tick = vim.b.changedtick
+    update_visited_buffers(bufnr)
     parse_buffer(bufnr)
   end
 end
