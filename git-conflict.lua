@@ -198,19 +198,13 @@ function M.choose(side)
   if not position then
     return
   end
-  local pos_start, pos_end, content_start, content_end
-  if side == SIDES.ours then
-    pos_start = position.current.range_start - 1
-    pos_start = pos_start < 0 and 0 or pos_start
-    pos_end = position.middle.range_end + 1
-    content_start = position.current.content_start
-    content_end = position.current.content_end
-  else
-    pos_start = position.middle.range_start
-    pos_end = position.incoming.range_end + 1
-    content_start = position.incoming.content_start
-    content_end = position.incoming.content_end
-  end
+  local data = side == SIDES.ours and position.current or position.incoming
+  local content_start = data.content_start
+  local content_end = data.content_end
+
+  local pos_start = position.current.range_start < 0 and 0 or position.current.range_start
+  local pos_end = position.incoming.range_end + 1
+
   local lines = api.nvim_buf_get_lines(0, content_start, content_end + 1, false)
   api.nvim_buf_set_lines(0, pos_start, pos_end, false, lines)
   parse_buffer(0)
