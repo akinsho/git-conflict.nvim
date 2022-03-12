@@ -52,7 +52,13 @@ local config = {
 -- Buffers that have been previously checked for conflicts and the saved tick at the time we last
 -- checked
 --- @type table<string, ConflictBufferCache>
-local visited_buffers = {}
+local visited_buffers = setmetatable({}, {
+  __index = function(t, k)
+    if type(k) == 'number' then
+      return t[api.nvim_buf_get_name(k)]
+    end
+  end,
+})
 
 ---Wrapper around `api.nvim_buf_get_lines` which defaults to the current buffer
 ---@param start number
@@ -176,7 +182,7 @@ end
 local function detect_conflicts(lines)
   local positions = {}
   -- A mapping of line number to bool for lines that have conflicts on them
-  -- allowing an O(n) check if a line is conflicted
+  -- allowing an O(1) check if a line is conflicted
   local line_map = {}
   local position, has_conflict, has_start, has_middle, has_end = nil, false, false, false, false
   for index, line in ipairs(lines) do
@@ -221,7 +227,7 @@ end
 ---@param bufnr number
 ---@return table?
 local function get_current_position(bufnr)
-  local match = visited_buffers[api.nvim_buf_get_name(bufnr)]
+  local match = visited_buffers[bufnr]
   if not match then
     return
   end
@@ -259,8 +265,7 @@ end
 
 local function attach()
   local bufnr = api.nvim_get_current_buf()
-  local name = api.nvim_buf_get_name(bufnr)
-  if visited_buffers[name] and visited_buffers[name].tick == vim.b[bufnr].changedtick then
+  if visited_buffers[bufnr] and visited_buffers[bufnr].tick == vim.b[bufnr].changedtick then
     return
   end
   update_visited_buffers(bufnr)
