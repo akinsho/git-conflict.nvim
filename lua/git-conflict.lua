@@ -5,6 +5,17 @@ local fn = vim.fn
 
 local color = require('git-conflict.colors')
 
+-----------------------------------------------------------------------------//
+-- Types
+-----------------------------------------------------------------------------//
+
+--- @class ConflictHighlights
+--- @field current string
+--- @field incoming string
+
+-----------------------------------------------------------------------------//
+-- Constants
+-----------------------------------------------------------------------------//
 local SIDES = {
   ours = 'ours',
   theirs = 'theirs',
@@ -19,6 +30,7 @@ local PRIORITY = vim.highlight.priorities.user
 local conflict_start = '^<<<<<<<'
 local conflict_middle = '^======='
 local conflict_end = '^>>>>>>>'
+-----------------------------------------------------------------------------//
 
 local config = {
   highlights = {
