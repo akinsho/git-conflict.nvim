@@ -57,9 +57,11 @@ end
 ---positions are keyed by a list of range start and end for each mark
 ---@param buf number
 ---@param positions table[]
-local function update_visited_buffers(buf, positions)
+---@param conflicts table<number, boolean>
+local function update_visited_buffers(buf, positions, conflicts)
   local buf_positions = {}
   visited_buffers[buf].positions = buf_positions
+  visited_buffers[buf].lines = conflicts
   for _, pos in ipairs(positions) do
     buf_positions[{ pos.current.range_start, pos.incoming.range_end }] = pos
   end
@@ -151,6 +153,9 @@ end
 
 local function detect_conflicts(lines)
   local positions = {}
+  -- A mapping of line number to bool for lines that have conflicts on them
+  -- allowing an O(n) check if a line is conflicted
+  local line_map = {}
   local position, has_conflict, has_start, has_middle, has_end = nil, false, false, false, false
   for index, line in ipairs(lines) do
     local lnum = index - 1
@@ -177,11 +182,15 @@ local function detect_conflicts(lines)
       position.incoming.content_end = lnum - 1
       positions[#positions + 1] = position
       has_conflict = has_start and has_middle and has_end
+      line_map[index] = true
 
       position, has_start, has_middle, has_end = nil, false, false, false
     end
+    if position then
+      line_map[index] = true
+    end
   end
-  return has_conflict, positions
+  return has_conflict, positions, line_map
 end
 
 ---Retrieves a conflict marker position by checking the visited buffers for a supported range
@@ -216,10 +225,10 @@ end
 ---@param bufnr number
 local function parse_buffer(bufnr)
   local lines = get_buf_lines(0, -1, bufnr)
-  local has_conflict, positions = detect_conflicts(lines)
+  local has_conflict, positions, line_conflicts = detect_conflicts(lines)
   if has_conflict then
     highlight_conflicts(positions, lines)
-    update_visited_buffers(api.nvim_buf_get_name(bufnr), positions)
+    update_visited_buffers(api.nvim_buf_get_name(bufnr), positions, line_conflicts)
   end
   if config.disable_diagnostics then
     toggle_diagnostics(bufnr, has_conflict)
