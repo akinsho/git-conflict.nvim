@@ -12,6 +12,16 @@ local color = require('git-conflict.colors')
 --- @field current string
 --- @field incoming string
 
+--- @class ConflictPosition
+--- @field incoming table
+--- @field middle table
+--- @field current table
+
+--- @class ConflictBufferCache
+--- @field lines table<number, boolean> map of conflicted line numbers
+--- @field positions ConflictPosition[]
+--- @field tick number
+
 -----------------------------------------------------------------------------//
 -- Constants
 -----------------------------------------------------------------------------//
@@ -41,6 +51,7 @@ local config = {
 
 -- Buffers that have been previously checked for conflicts and the saved tick at the time we last
 -- checked
+--- @type table<string, ConflictBufferCache>
 local visited_buffers = {}
 
 ---Wrapper around `api.nvim_buf_get_lines` which defaults to the current buffer
@@ -62,7 +73,7 @@ end
 ---Add the positions to the buffer in our in memory buffer list
 ---positions are keyed by a list of range start and end for each mark
 ---@param buf number
----@param positions table[]
+---@param positions ConflictPosition[]
 ---@param conflicts table<number, boolean>
 local function update_visited_buffers(buf, positions, conflicts)
   local buf_positions = {}
