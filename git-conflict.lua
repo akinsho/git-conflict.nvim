@@ -1,6 +1,7 @@
 local M = {}
 
 local api = vim.api
+local fn = vim.fn
 
 local color = require('git-conflict.colors')
 
@@ -107,43 +108,96 @@ local function highlight_conflicts(positions, lines)
   end
 end
 
-local function check_for_conflicts(lines)
+local function detect_conflicts(lines)
   local positions = {}
-  local has_conflict = false
-  local position
+  local position, has_conflict, has_start, has_middle, has_end = nil, false, false, false, false
   for index, line in ipairs(lines) do
     local lnum = index - 1
     if line:match(conflict_start) then
-      position = { current = {}, incoming = {} }
-      has_conflict = true
+      has_start = true
+      position = { current = {}, incoming = {}, middle = {} }
       position.current.range_start = lnum
     end
-    if line:match(conflict_middle) then
+    if has_start and line:match(conflict_middle) then
+      has_middle = true
+      position.middle.range_start = lnum
+      position.middle.range_end = lnum + 1
       position.current.range_end = lnum - 1
       position.incoming.range_start = lnum + 1
     end
-    if line:match(conflict_end) then
+    if has_start and has_middle and line:match(conflict_end) then
+      has_end = true
       position.incoming.range_end = lnum
       positions[#positions + 1] = position
-      position = nil
+      has_conflict = has_start and has_middle and has_end
+
+      position, has_start, has_middle, has_end = nil, false, false, false
     end
   end
   return has_conflict, positions
 end
 
+---Retrieves a conflict marker position by checking the visited buffers for a supported range
+---each mark is keyed by it's starting and ending position so we loop through a buffers marks to
+---see if the line number is withing a certain marks range
+---@param bufnr number
+---@return table?
+local function get_current_position(bufnr)
+  local match = visited_buffers[api.nvim_buf_get_name(bufnr)]
+  if not match then
+    return
+  end
+  local line = fn.line('.')
+  for k, v in pairs(match.positions) do
+    if type(k) == 'table' and k[1] <= line and k[2] >= line then
+      return v
+    end
+  end
+end
+
+function M.choose(side)
+  local pos_start, pos_end
+  local position = get_current_position(api.nvim_get_current_buf())
+  if not position then
+    return
+  end
+  if side == 'ours' then
+    pos_start = position.current.range_start
+    pos_end = position.current.range_end
+  else
+    pos_start = position.incoming.range_start
+    pos_end = position.incoming.range_end
+  end
+  api.nvim_buf_set_lines(0, pos_start, pos_end, false, {})
+  api.nvim_buf_set_lines(0, position.middle.range_start, position.middle.range_end, false, {})
+end
+
+local function parse_buffer(bufnr)
+  local lines = api.nvim_buf_get_lines(bufnr, 0, -1, false)
+  local has_conflict, positions = detect_conflicts(lines)
+  if has_conflict then
+    highlight_conflicts(positions, lines)
+    update_visited_buffers(api.nvim_buf_get_name(bufnr), positions)
+  end
+end
+
+local function attach()
   local bufnr = api.nvim_get_current_buf()
   local cur_buf = api.nvim_buf_get_name(bufnr)
   if
     not visited_buffers[cur_buf]
-    or (visited_buffers[cur_buf] and visited_buffers[cur_buf] ~= vim.b.changedtick)
+    or (visited_buffers[cur_buf] and visited_buffers[cur_buf].tick ~= vim.b.changedtick)
   then
-    visited_buffers[cur_buf] = vim.b.changedtick
-    local lines = api.nvim_buf_get_lines(bufnr, 0, -1, false)
-    local has_conflict, positions = check_for_conflicts(lines)
-    if has_conflict then
-      highlight_conflicts(positions, config)
+    if not visited_buffers[cur_buf] then
+      visited_buffers[cur_buf] = {}
     end
+    visited_buffers[cur_buf].tick = vim.b.changedtick
+    parse_buffer(bufnr)
   end
+end
+
+function M.clear()
+  api.nvim_buf_clear_namespace(0, NAMESPACE, 0, -1)
 end
 
 function M.setup(user_config)
