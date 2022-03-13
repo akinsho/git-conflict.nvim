@@ -6,6 +6,7 @@ local fmt = string.format
 local map = vim.keymap.set
 
 local color = require('git-conflict.colors')
+local utils = require('git-conflict.utils')
 
 -----------------------------------------------------------------------------//
 -- Types
@@ -67,44 +68,6 @@ local visited_buffers = setmetatable({}, {
     end
   end,
 })
-
------------------------------------------------------------------------------//
--- Utils
------------------------------------------------------------------------------//
-
----Only call the passed function once every timeout in ms
----@param func function
----@param timeout number
----@return function
-local function throttle(func, timeout)
-  local timer = vim.loop.new_timer()
-  local running = false
-  return function(...)
-    if not running then
-      func(...)
-      running = true
-      timer:start(timeout, 0, function()
-        running = false
-      end)
-    end
-  end
-end
-
----Wrapper around `api.nvim_buf_get_lines` which defaults to the current buffer
----@param start number
----@param _end number
----@param buf number
----@return string[]
-local function get_buf_lines(start, _end, buf)
-  return api.nvim_buf_get_lines(buf or 0, start, _end, false)
-end
-
----Get cursor row and column as (1, 0) based
----@param win_id number?
----@return number, number
-local function get_cursor_pos(win_id)
-  return unpack(api.nvim_win_get_cursor(win_id or 0))
-end
 -----------------------------------------------------------------------------//
 
 local function set_commands()
@@ -284,7 +247,7 @@ local function find_position(bufnr, comparator)
   if not match then
     return
   end
-  local line = get_cursor_pos()
+  local line = utils.get_cursor_pos()
   for range, position in pairs(match.positions) do
     if type(range) == 'table' and comparator(line, range, position) then
       return position
@@ -324,7 +287,7 @@ end
 ---Get the conflict marker positions for a buffer if any and update the buffers state
 ---@param bufnr number
 local function parse_buffer(bufnr, range_start, range_end)
-  local lines = get_buf_lines(range_start or 0, range_end or -1, bufnr)
+  local lines = utils.get_buf_lines(range_start or 0, range_end or -1, bufnr)
   local has_conflict, positions, line_conflicts = detect_conflicts(lines)
   update_visited_buffers(bufnr, positions, line_conflicts)
   if has_conflict then
@@ -446,10 +409,16 @@ function M.choose(side)
   local lines = {}
   if side == SIDES.ours or side == SIDES.theirs then
     local data = side == SIDES.ours and position.current or position.incoming
-    lines = get_buf_lines(data.content_start, data.content_end + 1)
+    lines = utils.get_buf_lines(data.content_start, data.content_end + 1)
   elseif side == SIDES.both then
-    local first = get_buf_lines(position.current.content_start, position.current.content_end + 1)
-    local second = get_buf_lines(position.incoming.content_start, position.incoming.content_end + 1)
+    local first = utils.get_buf_lines(
+      position.current.content_start,
+      position.current.content_end + 1
+    )
+    local second = utils.get_buf_lines(
+      position.incoming.content_start,
+      position.incoming.content_end + 1
+    )
     lines = vim.list_extend(first, second)
   elseif side == SIDES.none then
     lines = {}
