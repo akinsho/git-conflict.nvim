@@ -42,10 +42,10 @@ local conflict_end = '^>>>>>>>'
 -----------------------------------------------------------------------------//
 
 local config = {
-  disable_diagnostics = true,
+  disable_diagnostics = false,
   highlights = {
-    current = 'DiffAdd',
-    incoming = 'DiffText',
+    current = 'DiffText',
+    incoming = 'DiffAdd',
   },
 }
 
