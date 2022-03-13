@@ -270,13 +270,14 @@ local function parse_buffer(bufnr)
   end
 end
 
-local function attach()
-  local bufnr = api.nvim_get_current_buf()
+---Process a buffer if the changedtick has changed
+---@param bufnr number?
+local function process(bufnr)
+  bufnr = bufnr or api.nvim_get_current_buf()
   if visited_buffers[bufnr] and visited_buffers[bufnr].tick == vim.b[bufnr].changedtick then
     return
   end
   parse_buffer(bufnr)
-end
 end
 
 ---Select the changes to keep
@@ -322,7 +323,19 @@ function M.setup(user_config)
   api.nvim_create_autocmd('BufEnter', {
     group = id,
     pattern = '*',
-    callback = attach,
+    callback = process,
+  })
+
+  api.nvim_set_decoration_provider(NAMESPACE, {
+    -- TODO: find a way to throttle how often
+    -- this is called. We want to be able to undo
+    -- a conflict resolution and have the markers
+    -- re-appear but the tradeoff is re-parsing a whole file
+    on_win = function(_, _, bufnr, topline, botline)
+      if visited_buffers[bufnr] then
+        process(bufnr)
+      end
+    end,
   })
 end
 
