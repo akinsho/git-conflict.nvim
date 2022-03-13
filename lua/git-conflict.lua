@@ -260,9 +260,7 @@ end
 ---@param side ConflictSide
 local function set_cursor(pos, side)
   if pos then
-    local target = side == SIDES.ours and pos.current
-      or side == SIDES.theirs and pos.incoming
-      or pos.middle
+    local target = side == SIDES.ours and pos.current or pos.incoming
     api.nvim_win_set_cursor(0, { target.range_start + 1, 0 })
   end
 end
