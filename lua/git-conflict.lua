@@ -258,8 +258,8 @@ end
 
 ---Get the conflict marker positions for a buffer if any and update the buffers state
 ---@param bufnr number
-local function parse_buffer(bufnr)
-  local lines = get_buf_lines(0, -1, bufnr)
+local function parse_buffer(bufnr, range_start, range_end)
+  local lines = get_buf_lines(range_start or 0, range_end or -1, bufnr)
   local has_conflict, positions, line_conflicts = detect_conflicts(lines)
   update_visited_buffers(bufnr, positions, line_conflicts)
   if has_conflict then
@@ -270,14 +270,14 @@ local function parse_buffer(bufnr)
   end
 end
 
----Process a buffer if the changedtick has changed
+---Process a buffer if the changed tick has changed
 ---@param bufnr number?
-local function process(bufnr)
+local function process(bufnr, range_start, range_end)
   bufnr = bufnr or api.nvim_get_current_buf()
   if visited_buffers[bufnr] and visited_buffers[bufnr].tick == vim.b[bufnr].changedtick then
     return
   end
-  parse_buffer(bufnr)
+  parse_buffer(bufnr, range_start, range_end)
 end
 
 ---Select the changes to keep
@@ -333,7 +333,7 @@ function M.setup(user_config)
     -- re-appear but the tradeoff is re-parsing a whole file
     on_win = function(_, _, bufnr, topline, botline)
       if visited_buffers[bufnr] then
-        process(bufnr)
+        process(bufnr, topline, botline)
       end
     end,
   })
