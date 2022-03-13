@@ -25,6 +25,7 @@ end}
 
 ```lua
 {
+  default_mappings = true, -- disable buffer local mapping created by this plugin
   disable_diagnostics = false, -- This will disable the diagnostics in a buffer whilst it is conflicted
   highlights = {
     incoming = 'DiffText',
@@ -41,6 +42,28 @@ end}
 - `GitConflictChooseNone` - Select both none of the changes.
 - `GitConflictNextConflict` - Move to the next conflict.
 - `GitConflictPrevConflict` - Move to the previous conflict.
+
+## Mappings
+
+This plugin offers default buffer local mappings inside of conflicted files. This is primarily because applying these buffers only to relevant buffers
+is not possible through global mappings. A user can however disable these by setting `default_mappings = false` anyway and create global mappings as shown below.
+The default mappings are:
+<kbd>c<kbd><kbd>t<kbd> - choose theirs
+<kbd>c<kbd><kbd>b<kbd> - choose both
+<kbd>c<kbd><kbd>0<kbd> - choose none
+<kbd>]<kbd><kbd>x<kbd> - move to previous conflict
+<kbd>[<kbd><kbd>x<kbd> - move to next conflict
+
+If you would rather not use these then disable default mappings an you can then map these yourself.
+
+```lua
+vim.keymap.set('n', 'co', '<Plug>(git-conflict-ours)')
+vim.keymap.set('n', 'cb', '<Plug>(git-conflict-both)')
+vim.keymap.set('n', 'c0', '<Plug>(git-conflict-none)')
+vim.keymap.set('n', 'ct', '<Plug>(git-conflict-theirs)')
+vim.keymap.set('n', '[x', '<Plug>(git-conflict-next-conflict)')
+vim.keymap.set('n', ']x', '<Plug>(git-conflict-prev-conflict)')
+```
 
 ## Issues
 
