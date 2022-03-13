@@ -30,7 +30,6 @@ local SIDES = {
   theirs = 'theirs',
   both = 'both',
 }
-local AUGROUP_NAME = 'GitConflictCommands'
 local CURRENT_LABEL_HL = 'GitConflictCurrentLabel'
 local INCOMING_LABEL_HL = 'GitConflictIncomingLabel'
 local NAMESPACE = api.nvim_create_namespace('git-conflict')
@@ -319,22 +318,17 @@ function M.setup(user_config)
   set_highlights(config.highlights)
   set_commands()
 
-  local id = api.nvim_create_augroup(AUGROUP_NAME, { clear = true })
-  api.nvim_create_autocmd('BufEnter', {
-    group = id,
-    pattern = '*',
-    callback = process,
-  })
-
   api.nvim_set_decoration_provider(NAMESPACE, {
     -- TODO: find a way to throttle how often
     -- this is called. We want to be able to undo
     -- a conflict resolution and have the markers
-    -- re-appear but the tradeoff is re-parsing a whole file
+    -- re-appear but the tradeoff is re-parsing the visible
+    -- section of the file
+    -- how do we know what the set of conflicted buffers are?
+    -- can we depend on a list we know ahead of time? what if the user merges whilst
+    -- in nvim?
     on_win = function(_, _, bufnr, topline, botline)
-      if visited_buffers[bufnr] then
-        process(bufnr, topline, botline)
-      end
+      process(bufnr, topline, botline)
     end,
   })
 end
