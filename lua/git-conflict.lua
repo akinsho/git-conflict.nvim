@@ -331,6 +331,9 @@ function M.setup(user_config)
       local dir = fn.expand('<afile>:p:h')
       local fetch = throttle(M.fetch_conflicted_files, 6000)
       fetch(dir, function(files)
+      if not utils.is_valid_buf() then
+        return
+      end
         for name, _ in pairs(files) do
           -- FIXME: this path separator is probably not cross-compatible
           visited_buffers[dir .. '/' .. name] = {}
@@ -341,7 +344,7 @@ function M.setup(user_config)
 
   api.nvim_set_decoration_provider(NAMESPACE, {
     on_buf = function(_, bufnr, _)
-      return vim.bo[bufnr].modifiable and #vim.bo[bufnr].buftype == 0
+      return utils.is_valid_buf(bufnr)
     end,
     -- TODO: this can be optimised further by checking the line numbers that git returns and
     -- only re-parsing the buffer if an affected line is changed, using the `on_line` handler.

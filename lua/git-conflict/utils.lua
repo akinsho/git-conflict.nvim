@@ -39,4 +39,12 @@ function M.get_cursor_pos(win_id)
   return unpack(api.nvim_win_get_cursor(win_id or 0))
 end
 
+---Check if the buffer is likely to have actionable conflict markers
+---@param bufnr number?
+---@return boolean
+function M.is_valid_buf(bufnr)
+  bufnr = bufnr or 0
+  return #vim.bo[bufnr].buftype == 0 and vim.bo[bufnr].modifiable
+end
+
 return M
