@@ -8,7 +8,7 @@ local color = require('git-conflict.colors')
 -- Types
 -----------------------------------------------------------------------------//
 
----@alias ConflictSide "'ours'"|"'theirs'"|"'both'"
+---@alias ConflictSide "'ours'"|"'theirs'"|"'both'"|"'none"
 
 --- @class ConflictHighlights
 --- @field current string
@@ -31,6 +31,7 @@ local SIDES = {
   ours = 'ours',
   theirs = 'theirs',
   both = 'both',
+  none = 'none',
 }
 local CURRENT_HL = 'GitConflictCurrent'
 local INCOMING_HL = 'GitConflictIncoming'
@@ -138,11 +139,12 @@ end
 
 local function set_commands()
   vim.cmd([[
-    command! GitConflictChooseOurs lua require('git-conflict').choose('ours')
-    command! GitConflictChooseTheirs lua require('git-conflict').choose('theirs')
-    command! GitConflictChooseBoth lua require('git-conflict').choose('both')
-    command! GitConflictNextConflict lua require('git-conflict').find_next('ours')
-    command! GitConflictPrevConflict lua require('git-conflict').find_prev('ours')
+    command! -nargs=0 GitConflictChooseOurs lua require('git-conflict').choose('ours')
+    command! -nargs=0 GitConflictChooseTheirs lua require('git-conflict').choose('theirs')
+    command! -nargs=0 GitConflictChooseBoth lua require('git-conflict').choose('both')
+    command! -nargs=0 GitConflictChooseNone lua require('git-conflict').choose('none')
+    command! -nargs=0 GitConflictNextConflict lua require('git-conflict').find_next('ours')
+    command! -nargs=0 GitConflictPrevConflict lua require('git-conflict').find_prev('ours')
   ]])
 end
 
@@ -365,6 +367,8 @@ function M.choose(side)
     local first = get_buf_lines(position.current.content_start, position.current.content_end + 1)
     local second = get_buf_lines(position.incoming.content_start, position.incoming.content_end + 1)
     lines = vim.list_extend(first, second)
+  elseif side == SIDES.none then
+    lines = {}
   else
     return
   end
