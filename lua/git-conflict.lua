@@ -32,6 +32,8 @@ local SIDES = {
   theirs = 'theirs',
   both = 'both',
 }
+local CURRENT_HL = 'GitConflictCurrent'
+local INCOMING_HL = 'GitConflictIncoming'
 local CURRENT_LABEL_HL = 'GitConflictCurrentLabel'
 local INCOMING_LABEL_HL = 'GitConflictIncomingLabel'
 local NAMESPACE = api.nvim_create_namespace('git-conflict')
@@ -151,8 +153,10 @@ local function set_highlights(highlights)
   local incoming_color = api.nvim_get_hl_by_name(highlights.incoming, true)
   local current_label_bg = color.shade_color(current_color.background, -10)
   local incoming_label_bg = color.shade_color(incoming_color.background, -10)
-  api.nvim_set_hl(0, CURRENT_LABEL_HL, { background = current_label_bg, bold = true })
-  api.nvim_set_hl(0, INCOMING_LABEL_HL, { background = incoming_label_bg, bold = true })
+  api.nvim_set_hl(0, CURRENT_LABEL_HL, { background = current_color.background, bold = true })
+  api.nvim_set_hl(0, INCOMING_LABEL_HL, { background = incoming_color.background, bold = true })
+  api.nvim_set_hl(0, CURRENT_HL, { background = current_label_bg })
+  api.nvim_set_hl(0, INCOMING_HL, { background = incoming_label_bg })
 end
 
 ---Highlight each part of a git conflict i.e. the incoming changes vs the current/HEAD changes
@@ -172,8 +176,8 @@ local function highlight_conflicts(positions, lines)
     local incoming_label = lines[incoming_end + 1] .. ' (Incoming changes)'
 
     local curr_label_id = draw_section_label(bufnr, CURRENT_LABEL_HL, current_label, current_start)
-    local curr_id = hl_range(bufnr, config.highlights.current, current_start, current_end + 1)
-    local inc_id = hl_range(bufnr, config.highlights.incoming, incoming_start, incoming_end)
+    local curr_id = hl_range(bufnr, CURRENT_HL, current_start, current_end + 1)
+    local inc_id = hl_range(bufnr, INCOMING_HL, incoming_start, incoming_end)
     local inc_label_id = draw_section_label(bufnr, INCOMING_LABEL_HL, incoming_label, incoming_end)
 
     position.marks = {
