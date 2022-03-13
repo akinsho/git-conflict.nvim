@@ -69,6 +69,9 @@ local visited_buffers = setmetatable({}, {
     end
   end,
 })
+
+-----------------------------------------------------------------------------//
+-- Mappings
 -----------------------------------------------------------------------------//
 
 local function set_commands()
@@ -91,6 +94,17 @@ local function set_plug_mappings()
   map('n', '<Plug>(git-conflict-next-conflict)', '<Cmd>GitConflictNextConflict<CR>', opts)
   map('n', '<Plug>(git-conflict-prev-conflict)', '<Cmd>GitConflictPrevConflict<CR>', opts)
 end
+
+local function setup_buffer_mappings(bufnr)
+  local opts = { silent = true, buffer = bufnr }
+  map('n', 'co', '<Plug>(git-conflict-ours)', opts)
+  map('n', 'cb', '<Plug>(git-conflict-both)', opts)
+  map('n', 'c0', '<Plug>(git-conflict-none)', opts)
+  map('n', 'ct', '<Plug>(git-conflict-theirs)', opts)
+  map('n', '[x', '<Plug>(git-conflict-next-conflict)', opts)
+  map('n', ']x', '<Plug>(git-conflict-prev-conflict)', opts)
+end
+-----------------------------------------------------------------------------//
 
 ---Add the positions to the buffer in our in memory buffer list
 ---positions are keyed by a list of range start and end for each mark
@@ -297,16 +311,6 @@ local function parse_buffer(bufnr, range_start, range_end)
   if config.disable_diagnostics then
     toggle_diagnostics(bufnr, has_conflict)
   end
-end
-
-local function setup_buffer_mappings(bufnr)
-  local opts = { silent = true, buffer = bufnr }
-  map('n', 'co', '<Plug>(git-conflict-ours)', opts)
-  map('n', 'cb', '<Plug>(git-conflict-both)', opts)
-  map('n', 'c0', '<Plug>(git-conflict-none)', opts)
-  map('n', 'ct', '<Plug>(git-conflict-theirs)', opts)
-  map('n', '[x', '<Plug>(git-conflict-next-conflict)', opts)
-  map('n', ']x', '<Plug>(git-conflict-prev-conflict)', opts)
 end
 
 local function fetch_conflicts()
