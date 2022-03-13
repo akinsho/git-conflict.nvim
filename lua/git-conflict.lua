@@ -306,6 +306,9 @@ function M.setup(user_config)
   set_commands()
 
   api.nvim_set_decoration_provider(NAMESPACE, {
+    on_buf = function(_, bufnr, _) -- prevents on win running for invalid buffers
+      return vim.bo[bufnr].modifiable and vim.bo[bufnr].buftype == ''
+    end,
     -- TODO: find a way to throttle how often
     -- this is called. We want to be able to undo
     -- a conflict resolution and have the markers
@@ -316,6 +319,8 @@ function M.setup(user_config)
     -- in nvim?
     on_win = function(_, _, bufnr, topline, botline)
       process(bufnr, topline, botline)
+      -- prevents on_line callback from running
+      return false
     end,
   })
 end
