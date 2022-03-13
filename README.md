@@ -27,3 +27,18 @@ end}
   }
 }
 ```
+
+## Commands
+
+- `GitConflictChooseOurs` - Select the current changes
+- `GitConflictChooseTheirs` - Select the incoming changes
+- `GitConflictChooseBoth` - Select both changes
+
+## Issues
+
+**Please read this** - This plugin is not intended to do anything other than provide fancy visuals and some mappings to handle conflict resolution
+It will not be expanded to become a full git management plugin, there are a zillion plugins that do that already, this won't be one of those.
+
+### Feature requests
+
+Open source should be collaborative, if you have an idea for a feature you'd like to see added. Submit a PR rather than a feature request.
