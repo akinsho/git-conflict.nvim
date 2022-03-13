@@ -345,8 +345,17 @@ local function process(bufnr, range_start, range_end)
 end
 
 function M.setup(user_config)
-  config = vim.tbl_deep_extend('force', config, user_config or {})
+  if fn.executable('git') <= 0 then
+    return vim.schedule(function()
+      vim.notify_once(
+        'You need to have git installed in order to use this plugin',
+        'error',
+        { title = 'Git conflict' }
+      )
+    end)
+  end
 
+  config = vim.tbl_deep_extend('force', config, user_config or {})
   set_highlights(config.highlights)
   set_commands()
   set_plug_mappings()
@@ -388,24 +397,22 @@ end
 ---@param dir string?
 ---@param callback fun(files: table<string, number[]>)
 function M.fetch_conflicted_files(dir, callback)
-  if fn.executable('git') > 0 then
-    fn.jobstart(fmt('git -C "%s" diff --check', dir), {
-      stdout_buffered = true,
-      on_stdout = function(_, data, _)
-        local files = {}
-        for _, line in ipairs(data) do
-          if #line > 0 then
-            local name, lnum = unpack(vim.split(line, ':'))
-            if not files[name] then
-              files[name] = {}
-            end
-            table.insert(files[name], lnum)
+  fn.jobstart(fmt('git -C "%s" diff --check', dir), {
+    stdout_buffered = true,
+    on_stdout = function(_, data, _)
+      local files = {}
+      for _, line in ipairs(data) do
+        if #line > 0 then
+          local name, lnum = unpack(vim.split(line, ':'))
+          if not files[name] then
+            files[name] = {}
           end
+          table.insert(files[name], lnum)
         end
-        callback(files)
-      end,
-    })
-  end
+      end
+      callback(files)
+    end,
+  })
 end
 
 function M.clear()
