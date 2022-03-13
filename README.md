@@ -8,6 +8,11 @@ A plugin to visualise and resolve conflicts in neovim.
 
 This plugin is a work in progress, and not yet ready for stable use.
 
+## Requirements
+
+- `git`
+- `nvim 0.7+` - it's easier to build plugins with some of the nightly APIs such as `keymap.set` or `nvim_create_autocmd`
+
 ## Installation
 
 ```lua
@@ -30,9 +35,12 @@ end}
 
 ## Commands
 
-- `GitConflictChooseOurs` - Select the current changes
-- `GitConflictChooseTheirs` - Select the incoming changes
-- `GitConflictChooseBoth` - Select both changes
+- `GitConflictChooseOurs` - Select the current changes.
+- `GitConflictChooseTheirs` - Select the incoming changes.
+- `GitConflictChooseBoth` - Select both changes.
+- `GitConflictChooseNone` - Select both none of the changes.
+- `GitConflictNextConflict` - Move to the next conflict.
+- `GitConflictPrevConflict` - Move to the previous conflict.
 
 ## Issues
 
