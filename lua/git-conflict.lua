@@ -82,6 +82,28 @@ end
 local function get_cursor_pos(win_id)
   return unpack(api.nvim_win_get_cursor(win_id or 0))
 end
+-----------------------------------------------------------------------------//
+
+local function set_commands()
+  vim.cmd([[
+    command! -nargs=0 GitConflictChooseOurs lua require('git-conflict').choose('ours')
+    command! -nargs=0 GitConflictChooseTheirs lua require('git-conflict').choose('theirs')
+    command! -nargs=0 GitConflictChooseBoth lua require('git-conflict').choose('both')
+    command! -nargs=0 GitConflictChooseNone lua require('git-conflict').choose('none')
+    command! -nargs=0 GitConflictNextConflict lua require('git-conflict').find_next('ours')
+    command! -nargs=0 GitConflictPrevConflict lua require('git-conflict').find_prev('ours')
+  ]])
+end
+
+local function set_plug_mappings()
+  local opts = { silent = true }
+  map('n', '<Plug>(git-conflict-ours)', '<Cmd>GitConflictChooseOurs<CR>', opts)
+  map('n', '<Plug>(git-conflict-both)', '<Cmd>GitConflictChooseBoth<CR>', opts)
+  map('n', '<Plug>(git-conflict-none)', '<Cmd>GitConflictChooseNone<CR>', opts)
+  map('n', '<Plug>(git-conflict-theirs)', '<Cmd>GitConflictChooseTheirs<CR>', opts)
+  map('n', '<Plug>(git-conflict-next-conflict)', '<Cmd>GitConflictNextConflict<CR>', opts)
+  map('n', '<Plug>(git-conflict-prev-conflict)', '<Cmd>GitConflictPrevConflict<CR>', opts)
+end
 
 ---Add the positions to the buffer in our in memory buffer list
 ---positions are keyed by a list of range start and end for each mark
@@ -141,27 +163,6 @@ local function draw_section_label(bufnr, hl_group, label, lnum)
     virt_text_pos = 'overlay',
     priority = PRIORITY,
   })
-end
-
-local function set_commands()
-  vim.cmd([[
-    command! -nargs=0 GitConflictChooseOurs lua require('git-conflict').choose('ours')
-    command! -nargs=0 GitConflictChooseTheirs lua require('git-conflict').choose('theirs')
-    command! -nargs=0 GitConflictChooseBoth lua require('git-conflict').choose('both')
-    command! -nargs=0 GitConflictChooseNone lua require('git-conflict').choose('none')
-    command! -nargs=0 GitConflictNextConflict lua require('git-conflict').find_next('ours')
-    command! -nargs=0 GitConflictPrevConflict lua require('git-conflict').find_prev('ours')
-  ]])
-end
-
-local function set_plug_mappings()
-  local opts = { silent = true }
-  map('n', '<Plug>(git-conflict-ours)', '<Cmd>GitConflictChooseOurs<CR>', opts)
-  map('n', '<Plug>(git-conflict-both)', '<Cmd>GitConflictChooseBoth<CR>', opts)
-  map('n', '<Plug>(git-conflict-none)', '<Cmd>GitConflictChooseNone<CR>', opts)
-  map('n', '<Plug>(git-conflict-theirs)', '<Cmd>GitConflictChooseTheirs<CR>', opts)
-  map('n', '<Plug>(git-conflict-next-conflict)', '<Cmd>GitConflictNextConflict<CR>', opts)
-  map('n', '<Plug>(git-conflict-prev-conflict)', '<Cmd>GitConflictPrevConflict<CR>', opts)
 end
 
 ---Derive the colour of the section label highlights based on each sections highlights
