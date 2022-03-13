@@ -1,6 +1,8 @@
 local M = {}
 
+local fn = vim.fn
 local api = vim.api
+local fmt = string.format
 
 local color = require('git-conflict.colors')
 
@@ -91,7 +93,10 @@ local function update_visited_buffers(buf, positions, conflicts)
   end
   local buf_positions = {}
   local name = api.nvim_buf_get_name(buf)
-  visited_buffers[name] = visited_buffers[name] or {}
+  -- If this buffer is not in the list
+  if not visited_buffers[name] then
+    return
+  end
   visited_buffers[name].tick = vim.b[buf].changedtick
   visited_buffers[name].positions = buf_positions
   visited_buffers[name].lines = conflicts
@@ -311,24 +316,60 @@ function M.setup(user_config)
   set_highlights(config.highlights)
   set_commands()
 
-  api.nvim_set_decoration_provider(NAMESPACE, {
-    on_buf = function(_, bufnr, _) -- prevents on win running for invalid buffers
-      return vim.bo[bufnr].modifiable and vim.bo[bufnr].buftype == ''
-    end,
-    -- TODO: find a way to throttle how often
-    -- this is called. We want to be able to undo
-    -- a conflict resolution and have the markers
-    -- re-appear but the tradeoff is re-parsing the visible
-    -- section of the file
-    -- how do we know what the set of conflicted buffers are?
-    -- can we depend on a list we know ahead of time? what if the user merges whilst
-    -- in nvim?
-    on_win = function(_, _, bufnr, topline, botline)
-      process(bufnr, topline, botline)
-      -- prevents on_line callback from running
-      return false
+  local id = api.nvim_create_augroup('GitConflictCommands', { clear = true })
+  api.nvim_create_autocmd({ 'VimEnter', 'BufEnter', 'ShellCmdPost' }, {
+    group = id,
+    pattern = '*',
+    callback = function()
+      local dir = fn.expand('<afile>:p:h')
+      M.fetch_conflicted_files(dir, function(files)
+        for name, _ in pairs(files) do
+          -- FIXME: this path separator is probably not cross-compatible
+          visited_buffers[dir .. '/' .. name] = {}
+        end
+      end)
     end,
   })
+
+  api.nvim_set_decoration_provider(NAMESPACE, {
+    on_buf = function(_, bufnr, _)
+      return vim.bo[bufnr].modifiable and #vim.bo[bufnr].buftype == 0
+    end,
+    -- TODO: this can be optimised further by checking the line numbers that git returns and
+    -- only re-parsing the buffer if an affected line is changed, using the `on_line` handler.
+    on_win = function(_, _, bufnr, topline, botline)
+      if visited_buffers[bufnr] then
+        local has_been_checked = visited_buffers[bufnr].positions ~= nil
+        topline = has_been_checked and topline or 0
+        botline = has_been_checked and botline or -1
+        process(bufnr, topline, botline)
+      end
+    end,
+  })
+end
+
+---Fetch a list of the conflicted files within the specified directory
+---@param dir string?
+---@param callback fun(files: table<string, number[]>)
+function M.fetch_conflicted_files(dir, callback)
+  if fn.executable('git') > 0 then
+    fn.jobstart(fmt('git -C "%s" diff --check', dir), {
+      stdout_buffered = true,
+      on_stdout = function(_, data, _)
+        local files = {}
+        for _, line in ipairs(data) do
+          if #line > 0 then
+            local name, lnum = unpack(vim.split(line, ':'))
+            if not files[name] then
+              files[name] = {}
+            end
+            table.insert(files[name], lnum)
+          end
+        end
+        callback(files)
+      end,
+    })
+  end
 end
 
 function M.clear()
