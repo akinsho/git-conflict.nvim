@@ -360,17 +360,15 @@ end
 ---@param dir string?
 ---@param callback fun(files: table<string, number[]>)
 function M.fetch_conflicted_files(dir, callback)
-  fn.jobstart(fmt('git -C "%s" diff --check', dir), {
+  fn.jobstart(fmt('git -C "%s" diff --name-only --diff-filter=U', dir), {
     stdout_buffered = true,
     on_stdout = function(_, data, _)
       local files = {}
-      for _, line in ipairs(data) do
-        if #line > 0 then
-          local name, lnum = unpack(vim.split(line, ':'))
-          if not files[name] then
-            files[name] = {}
+      for _, filename in ipairs(data) do
+        if #filename > 0 then
+          if not files[filename] then
+            files[filename] = {}
           end
-          table.insert(files[name], lnum)
         end
       end
       callback(files)
