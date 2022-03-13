@@ -1,6 +1,6 @@
 # git-conflict.nvim
 
-<img width="656" alt="Screen Shot 2022-03-13 at 00 17 39" src="https://user-images.githubusercontent.com/22454918/158039595-63c2922c-0e49-4baa-99bd-3d722ca90a4b.png">
+<img width="477" alt="image" src="https://user-images.githubusercontent.com/22454918/158040417-44b18468-3fc1-4ed9-ab38-75dadea0346b.png">
 
 A plugin to visualise and resolve conflicts in neovim.
 
