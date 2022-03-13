@@ -326,19 +326,22 @@ function M.setup(user_config)
 
   api.nvim_create_autocmd({ 'VimEnter', 'BufEnter', 'ShellCmdPost' }, {
     group = augroup_id,
-    pattern = '*',
     callback = function()
-      local dir = fn.expand('<afile>:p:h')
-      local fetch = throttle(M.fetch_conflicted_files, 6000)
-      fetch(dir, function(files)
       if not utils.is_valid_buf() then
         return
       end
-        for name, _ in pairs(files) do
-          -- FIXME: this path separator is probably not cross-compatible
-          visited_buffers[dir .. '/' .. name] = {}
-        end
-      end)
+      local fetch = utils.throttle(function()
+        local dir = fn.expand('%:p:h')
+        M.fetch_conflicted_files(dir, function(files)
+          for name, _ in pairs(files) do
+            local path = dir .. '/' .. name -- FIXME: use cross-compatible path separator
+            if not visited_buffers[path] then
+              visited_buffers[path] = {}
+            end
+          end
+        end)
+      end, 60000)
+      fetch()
     end,
   })
 
