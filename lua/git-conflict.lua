@@ -8,6 +8,8 @@ local color = require('git-conflict.colors')
 -- Types
 -----------------------------------------------------------------------------//
 
+---@alias ConflictSide "'ours'"|"'theirs'"|"'both'"
+
 --- @class ConflictHighlights
 --- @field current string
 --- @field incoming string
@@ -227,21 +229,41 @@ local function detect_conflicts(lines)
   return has_conflict, positions, line_map
 end
 
----Retrieves a conflict marker position by checking the visited buffers for a supported range
----each mark is keyed by it's starting and ending position so we loop through a buffers marks to
----see if the line number is withing a certain marks range
+---Helper function to find a conflict position based on a comparator function
 ---@param bufnr number
----@return table?
-local function get_current_position(bufnr)
+---@param comparator number
+---@return ConflictPosition
+local function find_position(bufnr, comparator)
   local match = visited_buffers[bufnr]
   if not match then
     return
   end
   local line = get_cursor_pos()
   for range, position in pairs(match.positions) do
-    if type(range) == 'table' and range[1] <= line and range[2] >= line then
+    if type(range) == 'table' and comparator(line, range, position) then
       return position
     end
+  end
+end
+---Retrieves a conflict marker position by checking the visited buffers for a supported range
+---each mark is keyed by it's starting and ending position so we loop through a buffers marks to
+---see if the line number is within a certain marks range
+---@param bufnr number
+---@return table?
+local function get_current_position(bufnr)
+  return find_position(bufnr, function(line, range, _)
+    return range[1] <= line and range[2] >= line
+  end)
+end
+
+---@param pos ConflictPosition
+---@param side ConflictSide
+local function set_cursor(pos, side)
+  if pos then
+    local target = side == SIDES.ours and pos.current
+      or side == SIDES.theirs and pos.incoming
+      or pos.middle
+    api.nvim_win_set_cursor(0, { target.range_start + 1, 0 })
   end
 end
 
@@ -279,8 +301,49 @@ local function process(bufnr, range_start, range_end)
   parse_buffer(bufnr, range_start, range_end)
 end
 
+function M.setup(user_config)
+  config = vim.tbl_deep_extend('force', config, user_config or {})
+
+  set_highlights(config.highlights)
+  set_commands()
+
+  api.nvim_set_decoration_provider(NAMESPACE, {
+    -- TODO: find a way to throttle how often
+    -- this is called. We want to be able to undo
+    -- a conflict resolution and have the markers
+    -- re-appear but the tradeoff is re-parsing the visible
+    -- section of the file
+    -- how do we know what the set of conflicted buffers are?
+    -- can we depend on a list we know ahead of time? what if the user merges whilst
+    -- in nvim?
+    on_win = function(_, _, bufnr, topline, botline)
+      process(bufnr, topline, botline)
+    end,
+  })
+end
+
+function M.clear()
+  api.nvim_buf_clear_namespace(0, NAMESPACE, 0, -1)
+end
+
+---@param side ConflictSide
+function M.find_next(side)
+  local pos = find_position(0, function(line, range, _)
+    return range[1] >= line and range[2] >= line
+  end)
+  set_cursor(pos, side)
+end
+
+---@param side ConflictSide
+function M.find_prev(side)
+  local pos = find_position(0, function(line, range, _)
+    return range[1] <= line and range[2] <= line
+  end)
+  set_cursor(pos, side)
+end
+
 ---Select the changes to keep
----@param side "'ours'"|"'theirs'"|"'both'"
+---@param side ConflictSide
 function M.choose(side)
   local bufnr = api.nvim_get_current_buf()
   local position = get_current_position(bufnr)
@@ -306,31 +369,6 @@ function M.choose(side)
   api.nvim_buf_del_extmark(0, NAMESPACE, position.marks.incoming.label)
   api.nvim_buf_del_extmark(0, NAMESPACE, position.marks.current.label)
   parse_buffer(bufnr)
-end
-
-function M.clear()
-  api.nvim_buf_clear_namespace(0, NAMESPACE, 0, -1)
-end
-
-function M.setup(user_config)
-  config = vim.tbl_deep_extend('force', config, user_config or {})
-
-  set_highlights(config.highlights)
-  set_commands()
-
-  api.nvim_set_decoration_provider(NAMESPACE, {
-    -- TODO: find a way to throttle how often
-    -- this is called. We want to be able to undo
-    -- a conflict resolution and have the markers
-    -- re-appear but the tradeoff is re-parsing the visible
-    -- section of the file
-    -- how do we know what the set of conflicted buffers are?
-    -- can we depend on a list we know ahead of time? what if the user merges whilst
-    -- in nvim?
-    on_win = function(_, _, bufnr, topline, botline)
-      process(bufnr, topline, botline)
-    end,
-  })
 end
 
 return M
