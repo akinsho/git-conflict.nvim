@@ -298,6 +298,25 @@ local function parse_buffer(bufnr, range_start, range_end)
   end
 end
 
+
+local function fetch_conflicts()
+  if not utils.is_valid_buf() then
+    return
+  end
+  local fetch = utils.throttle(60000, function()
+    local dir = fn.expand('%:p:h')
+    M.fetch_conflicted_files(dir, function(files)
+      for name, _ in pairs(files) do
+        local path = dir .. '/' .. name -- FIXME: use cross-compatible path separator
+        if not visited_buffers[path] then
+          visited_buffers[path] = {}
+        end
+      end
+    end)
+  end)
+  fetch()
+end
+
 ---Process a buffer if the changed tick has changed
 ---@param bufnr number?
 local function process(bufnr, range_start, range_end)
@@ -326,23 +345,7 @@ function M.setup(user_config)
 
   api.nvim_create_autocmd({ 'VimEnter', 'BufEnter', 'ShellCmdPost' }, {
     group = augroup_id,
-    callback = function()
-      if not utils.is_valid_buf() then
-        return
-      end
-      local fetch = utils.throttle(function()
-        local dir = fn.expand('%:p:h')
-        M.fetch_conflicted_files(dir, function(files)
-          for name, _ in pairs(files) do
-            local path = dir .. '/' .. name -- FIXME: use cross-compatible path separator
-            if not visited_buffers[path] then
-              visited_buffers[path] = {}
-            end
-          end
-        end)
-      end, 60000)
-      fetch()
-    end,
+    callback = fetch_conflicts,
   })
 
   api.nvim_set_decoration_provider(NAMESPACE, {

@@ -6,10 +6,10 @@ local M = {}
 local api = vim.api
 
 ---Only call the passed function once every timeout in ms
----@param func function
 ---@param timeout number
+---@param func function
 ---@return function
-function M.throttle(func, timeout)
+function M.throttle(timeout, func)
   local timer = vim.loop.new_timer()
   local running = false
   return function(...)
