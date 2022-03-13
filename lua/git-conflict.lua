@@ -82,16 +82,17 @@ end
 ---@param positions ConflictPosition[]
 ---@param conflicts table<string, boolean>
 local function update_visited_buffers(buf, positions, conflicts)
+  if not buf or not api.nvim_buf_is_valid(buf) then
+    return
+  end
+  local buf_positions = {}
   local name = api.nvim_buf_get_name(buf)
-  if not positions then
-    visited_buffers[name] = { tick = vim.b.changedtick, positions = {}, lines = {} }
-  else
-    local buf_positions = {}
-    visited_buffers[name].positions = buf_positions
-    visited_buffers[name].lines = conflicts
-    for _, pos in ipairs(positions) do
-      buf_positions[{ pos.current.range_start, pos.incoming.range_end }] = pos
-    end
+  visited_buffers[name] = visited_buffers[name] or {}
+  visited_buffers[name].tick = vim.b[buf].changedtick
+  visited_buffers[name].positions = buf_positions
+  visited_buffers[name].lines = conflicts
+  for _, pos in ipairs(positions) do
+    buf_positions[{ pos.current.range_start, pos.incoming.range_end }] = pos
   end
 end
 
@@ -274,7 +275,6 @@ local function attach()
   if visited_buffers[bufnr] and visited_buffers[bufnr].tick == vim.b[bufnr].changedtick then
     return
   end
-  update_visited_buffers(bufnr)
   parse_buffer(bufnr)
 end
 end
