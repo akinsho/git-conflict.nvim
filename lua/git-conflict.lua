@@ -51,6 +51,7 @@ local conflict_end = '^>>>>>>>'
 -----------------------------------------------------------------------------//
 
 local config = {
+  default_mappings = true,
   disable_diagnostics = false,
   highlights = {
     current = 'DiffText',
@@ -298,6 +299,15 @@ local function parse_buffer(bufnr, range_start, range_end)
   end
 end
 
+local function setup_buffer_mappings(bufnr)
+  local opts = { silent = true, buffer = bufnr }
+  map('n', 'co', '<Plug>(git-conflict-ours)', opts)
+  map('n', 'cb', '<Plug>(git-conflict-both)', opts)
+  map('n', 'c0', '<Plug>(git-conflict-none)', opts)
+  map('n', 'ct', '<Plug>(git-conflict-theirs)', opts)
+  map('n', '[x', '<Plug>(git-conflict-next-conflict)', opts)
+  map('n', ']x', '<Plug>(git-conflict-prev-conflict)', opts)
+end
 
 local function fetch_conflicts()
   if not utils.is_valid_buf() then
@@ -347,6 +357,17 @@ function M.setup(user_config)
     group = augroup_id,
     callback = fetch_conflicts,
   })
+
+  if config.default_mappings then
+    api.nvim_create_autocmd('BufEnter', {
+      callback = function()
+        local bufnr = api.nvim_get_current_buf()
+        if visited_buffers[bufnr] then
+          setup_buffer_mappings(bufnr)
+        end
+      end,
+    })
+  end
 
   api.nvim_set_decoration_provider(NAMESPACE, {
     on_buf = function(_, bufnr, _)
