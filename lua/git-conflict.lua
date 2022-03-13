@@ -139,6 +139,8 @@ local function set_commands()
     command! GitConflictChooseOurs lua require('git-conflict').choose('ours')
     command! GitConflictChooseTheirs lua require('git-conflict').choose('theirs')
     command! GitConflictChooseBoth lua require('git-conflict').choose('both')
+    command! GitConflictNextConflict lua require('git-conflict').find_next('ours')
+    command! GitConflictPrevConflict lua require('git-conflict').find_prev('ours')
   ]])
 end
 
