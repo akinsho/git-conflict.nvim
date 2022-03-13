@@ -40,8 +40,9 @@ local CURRENT_HL = 'GitConflictCurrent'
 local INCOMING_HL = 'GitConflictIncoming'
 local CURRENT_LABEL_HL = 'GitConflictCurrentLabel'
 local INCOMING_LABEL_HL = 'GitConflictIncomingLabel'
-local NAMESPACE = api.nvim_create_namespace('git-conflict')
 local PRIORITY = vim.highlight.priorities.user
+local NAMESPACE = api.nvim_create_namespace('git-conflict')
+local augroup_id = api.nvim_create_augroup('GitConflictCommands', { clear = true })
 
 local conflict_start = '^<<<<<<<'
 local conflict_middle = '^======='
@@ -360,9 +361,8 @@ function M.setup(user_config)
   set_commands()
   set_plug_mappings()
 
-  local id = api.nvim_create_augroup('GitConflictCommands', { clear = true })
   api.nvim_create_autocmd({ 'VimEnter', 'BufEnter', 'ShellCmdPost' }, {
-    group = id,
+    group = augroup_id,
     pattern = '*',
     callback = function()
       local dir = fn.expand('<afile>:p:h')
