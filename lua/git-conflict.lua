@@ -67,6 +67,28 @@ local visited_buffers = setmetatable({}, {
   end,
 })
 
+-----------------------------------------------------------------------------//
+-- Utils
+-----------------------------------------------------------------------------//
+
+---Only call the passed function once every timeout in ms
+---@param func function
+---@param timeout number
+---@return function
+local function throttle(func, timeout)
+  local timer = vim.loop.new_timer()
+  local running = false
+  return function(...)
+    if not running then
+      func(...)
+      running = true
+      timer:start(timeout, 0, function()
+        running = false
+      end)
+    end
+  end
+end
+
 ---Wrapper around `api.nvim_buf_get_lines` which defaults to the current buffer
 ---@param start number
 ---@param _end number
@@ -335,7 +357,8 @@ function M.setup(user_config)
     pattern = '*',
     callback = function()
       local dir = fn.expand('<afile>:p:h')
-      M.fetch_conflicted_files(dir, function(files)
+      local fetch = throttle(M.fetch_conflicted_files, 6000)
+      fetch(dir, function(files)
         for name, _ in pairs(files) do
           -- FIXME: this path separator is probably not cross-compatible
           visited_buffers[dir .. '/' .. name] = {}
