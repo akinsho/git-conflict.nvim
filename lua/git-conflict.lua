@@ -345,12 +345,9 @@ function M.setup(user_config)
     end,
     -- TODO: this can be optimised further by checking the line numbers that git returns and
     -- only re-parsing the buffer if an affected line is changed, using the `on_line` handler.
-    on_win = function(_, _, bufnr, topline, botline)
+    on_win = function(_, _, bufnr, _, _)
       if visited_buffers[bufnr] then
-        local has_been_checked = visited_buffers[bufnr].positions ~= nil
-        topline = has_been_checked and topline or 0
-        botline = has_been_checked and botline or -1
-        process(bufnr, topline, botline)
+        process(bufnr)
       end
     end,
   })
