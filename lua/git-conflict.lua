@@ -194,7 +194,7 @@ local function detect_conflicts(lines)
   -- A mapping of line number to bool for lines that have conflicts on them
   -- allowing an O(1) check if a line is conflicted
   local line_map = {}
-  local position, has_conflict, has_start, has_middle, has_end = nil, false, false, false, false
+  local position, has_start, has_middle = nil, false, false
   for index, line in ipairs(lines) do
     local lnum = index - 1
     if line:match(conflict_start) then
@@ -215,20 +215,18 @@ local function detect_conflicts(lines)
       position.incoming.content_start = lnum + 1
     end
     if has_start and has_middle and line:match(conflict_end) then
-      has_end = true
       position.incoming.range_end = lnum
       position.incoming.content_end = lnum - 1
       positions[#positions + 1] = position
-      has_conflict = has_start and has_middle and has_end
       line_map[index] = true
 
-      position, has_start, has_middle, has_end = nil, false, false, false
+      position, has_start, has_middle = nil, false, false
     end
     if position then
       line_map[index] = true
     end
   end
-  return has_conflict, positions, line_map
+  return #positions > 0, positions, line_map
 end
 
 ---Helper function to find a conflict position based on a comparator function
