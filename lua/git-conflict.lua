@@ -3,6 +3,7 @@ local M = {}
 local fn = vim.fn
 local api = vim.api
 local fmt = string.format
+local map = vim.keymap.set
 
 local color = require('git-conflict.colors')
 
@@ -151,6 +152,16 @@ local function set_commands()
     command! -nargs=0 GitConflictNextConflict lua require('git-conflict').find_next('ours')
     command! -nargs=0 GitConflictPrevConflict lua require('git-conflict').find_prev('ours')
   ]])
+end
+
+local function set_plug_mappings()
+  local opts = { silent = true }
+  map('n', '<Plug>(git-conflict-ours)', '<Cmd>GitConflictChooseOurs<CR>', opts)
+  map('n', '<Plug>(git-conflict-both)', '<Cmd>GitConflictChooseBoth<CR>', opts)
+  map('n', '<Plug>(git-conflict-none)', '<Cmd>GitConflictChooseNone<CR>', opts)
+  map('n', '<Plug>(git-conflict-theirs)', '<Cmd>GitConflictChooseTheirs<CR>', opts)
+  map('n', '<Plug>(git-conflict-next-conflict)', '<Cmd>GitConflictNextConflict<CR>', opts)
+  map('n', '<Plug>(git-conflict-prev-conflict)', '<Cmd>GitConflictPrevConflict<CR>', opts)
 end
 
 ---Derive the colour of the section label highlights based on each sections highlights
@@ -315,6 +326,7 @@ function M.setup(user_config)
 
   set_highlights(config.highlights)
   set_commands()
+  set_plug_mappings()
 
   local id = api.nvim_create_augroup('GitConflictCommands', { clear = true })
   api.nvim_create_autocmd({ 'VimEnter', 'BufEnter', 'ShellCmdPost' }, {
