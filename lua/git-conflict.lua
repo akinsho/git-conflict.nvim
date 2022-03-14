@@ -401,47 +401,31 @@ function M.setup(user_config)
   })
 end
 
-local function make_git_root_fetch()
-  local paths = {}
-  return function(dir, callback)
-    if paths[dir] then
-      return callback(paths[dir])
-    end
-    fn.jobstart(fmt('git -C "%s" rev-parse --show-toplevel', dir), {
-      stdout_buffered = true,
-      on_stdout = function(_, data)
-        paths[dir] = data[1]
-        callback(data[1])
-      end,
-    })
-  end
-end
-
-M.get_git_root = make_git_root_fetch()
-
 ---Fetch a list of the conflicted files within the specified directory
 ---@reference: https://stackoverflow.com/a/10874862
 ---@param dir string?
 ---@param callback fun(files: table<string, number[]>)
 function M.fetch_conflicted_files(dir, callback)
-  M.get_git_root(dir, function(git_dir)
-    -- TODO: can the names returned in the diff command be full paths, which would
-    -- remove the need to fetch the git root
-    fn.jobstart(fmt('git -C "%s" diff --name-only --diff-filter=U', git_dir), {
-      stdout_buffered = true,
-      on_stdout = function(_, data, _)
-        local files = {}
-        for _, filename in ipairs(data) do
-          if #filename > 0 then
-            if not files[filename] then
-              files[git_dir .. sep .. filename] = {}
-            end
+  -- we add a line prefix to the git command so that the full path is returned
+  local cmd = fmt(
+    'git -C "%s" diff --line-prefix=`git rev-parse --show-toplevel`%s --name-only --diff-filter=U',
+    dir,
+    sep
+  )
+  fn.jobstart(cmd, {
+    stdout_buffered = true,
+    on_stdout = function(_, data, _)
+      local files = {}
+      for _, filename in ipairs(data) do
+        if #filename > 0 then
+          if not files[filename] then
+            files[filename] = {}
           end
         end
-        callback(files)
-      end,
-    })
-  end)
+      end
+      callback(files)
+    end,
+  })
 end
 
 function M.clear(bufnr)
