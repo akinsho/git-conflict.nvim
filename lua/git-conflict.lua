@@ -8,6 +8,10 @@ local map = vim.keymap.set
 local color = require('git-conflict.colors')
 local utils = require('git-conflict.utils')
 
+--- REFERENCES:
+-- Detecting the state of a git repository based on files in the .git directory.
+-- https://stackoverflow.com/questions/49774200/how-to-tell-if-my-git-repo-is-in-a-conflict
+
 -----------------------------------------------------------------------------//
 -- Types
 -----------------------------------------------------------------------------//
@@ -328,8 +332,7 @@ local function fetch_conflicts()
     return
   end
   local fetch = utils.throttle(60000, function()
-    local dir = fn.expand('%:p:h')
-    M.fetch_conflicted_files(dir, function(files)
+    M.fetch_conflicted_files(fn.expand('%:p:h'), function(files)
       -- clear old extmarks
       for name, buf in pairs(visited_buffers) do
         if not files[name] and buf.bufnr then
