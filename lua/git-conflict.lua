@@ -8,9 +8,21 @@ local map = vim.keymap.set
 local color = require('git-conflict.colors')
 local utils = require('git-conflict.utils')
 
---- REFERENCES:
+-----------------------------------------------------------------------------//
+-- REFERENCES:
+-----------------------------------------------------------------------------//
 -- Detecting the state of a git repository based on files in the .git directory.
 -- https://stackoverflow.com/questions/49774200/how-to-tell-if-my-git-repo-is-in-a-conflict
+-- git diff commands to git a list of conflicted files
+-- https://stackoverflow.com/questions/3065650/whats-the-simplest-way-to-list-conflicted-files-in-git
+-- how to show a full path for files in a git diff command
+-- https://stackoverflow.com/questions/10459374/making-git-diff-stat-show-full-file-path
+
+-----------------------------------------------------------------------------//
+-- TODO:
+-----------------------------------------------------------------------------//
+-- - [ ] Fix traversal order of prev and next conflict commands.
+-- - [ ] Clear buffer mappings once a conflict is resolved.
 
 -----------------------------------------------------------------------------//
 -- Types
