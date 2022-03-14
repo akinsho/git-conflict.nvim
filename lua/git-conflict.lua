@@ -198,7 +198,7 @@ end
 ---@param lines string[]
 local function highlight_conflicts(positions, lines)
   local bufnr = api.nvim_get_current_buf()
-  api.nvim_buf_clear_namespace(bufnr, NAMESPACE, 0, -1)
+  M.clear(bufnr)
 
   for _, position in ipairs(positions) do
     local current_start = position.current.range_start
@@ -431,7 +431,11 @@ function M.fetch_conflicted_files(dir, callback)
   })
 end
 
+---@param bufnr number?
 function M.clear(bufnr)
+  if bufnr and not api.nvim_buf_is_valid(bufnr) then
+    return
+  end
   bufnr = bufnr or 0
   api.nvim_buf_clear_namespace(bufnr, NAMESPACE, 0, -1)
 end
