@@ -27,6 +27,7 @@ local utils = require('git-conflict.utils')
 --- @field lines table<number, boolean> map of conflicted line numbers
 --- @field positions ConflictPosition[]
 --- @field tick number
+--- @field bufnr number
 
 -----------------------------------------------------------------------------//
 -- Constants
@@ -127,6 +128,7 @@ local function update_visited_buffers(buf, positions, conflicts)
   if not visited_buffers[name] then
     return
   end
+  visited_buffers[name].bufnr = buf
   visited_buffers[name].tick = vim.b[buf].changedtick
   visited_buffers[name].positions = buf_positions
   visited_buffers[name].lines = conflicts
@@ -326,6 +328,12 @@ local function fetch_conflicts()
   local fetch = utils.throttle(60000, function()
     local dir = fn.expand('%:p:h')
     M.fetch_conflicted_files(dir, function(files)
+      -- clear old extmarks
+      for name, buf in pairs(visited_buffers) do
+        if not files[name] and buf.bufnr then
+          M.clear(buf.bufnr)
+        end
+      end
       -- Replace the existing visited buffers with the freshly sourced files from git
       local buffers = create_visited_buffers()
       for path, _ in pairs(files) do
@@ -383,8 +391,6 @@ function M.setup(user_config)
     on_buf = function(_, bufnr, _)
       return utils.is_valid_buf(bufnr)
     end,
-    -- TODO: this can be optimised further by checking the line numbers that git returns and
-    -- only re-parsing the buffer if an affected line is changed, using the `on_line` handler.
     on_win = function(_, _, bufnr, _, _)
       if visited_buffers[bufnr] then
         process(bufnr)
@@ -393,28 +399,49 @@ function M.setup(user_config)
   })
 end
 
+local function make_git_root_fetch()
+  local paths = {}
+  return function(dir, callback)
+    if paths[dir] then
+      return callback(paths[dir])
+    end
+    fn.jobstart(fmt('git -C "%s" rev-parse --show-toplevel', dir), {
+      stdout_buffered = true,
+      on_stdout = function(_, data)
+        paths[dir] = data[1]
+        callback(data[1])
+      end,
+    })
+  end
+end
+
+M.get_git_root = make_git_root_fetch()
+
 ---Fetch a list of the conflicted files within the specified directory
 ---@param dir string?
 ---@param callback fun(files: table<string, number[]>)
 function M.fetch_conflicted_files(dir, callback)
-  fn.jobstart(fmt('git -C "%s" diff --name-only --diff-filter=U', dir), {
-    stdout_buffered = true,
-    on_stdout = function(_, data, _)
-      local files = {}
-      for _, filename in ipairs(data) do
-        if #filename > 0 then
-          if not files[filename] then
-            files[dir .. sep .. filename] = {}
+  M.get_git_root(dir, function(git_dir)
+    fn.jobstart(fmt('git -C "%s" diff --name-only --diff-filter=U', git_dir), {
+      stdout_buffered = true,
+      on_stdout = function(_, data, _)
+        local files = {}
+        for _, filename in ipairs(data) do
+          if #filename > 0 then
+            if not files[filename] then
+              files[git_dir .. sep .. filename] = {}
+            end
           end
         end
-      end
-      callback(files)
-    end,
-  })
+        callback(files)
+      end,
+    })
+  end)
 end
 
-function M.clear()
-  api.nvim_buf_clear_namespace(0, NAMESPACE, 0, -1)
+function M.clear(bufnr)
+  bufnr = bufnr or 0
+  api.nvim_buf_clear_namespace(bufnr, NAMESPACE, 0, -1)
 end
 
 ---@param side ConflictSide
