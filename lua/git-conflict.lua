@@ -188,6 +188,8 @@ local function set_highlights(highlights)
 end
 
 ---Highlight each part of a git conflict i.e. the incoming changes vs the current/HEAD changes
+---TODO: should extmarks be ephemeral? or is it less expensive to save them and only re-apply
+---them when a buffer changes since otherwise we have to reparse the whole buffer constantly
 ---@param positions table
 ---@param lines string[]
 local function highlight_conflicts(positions, lines)
@@ -418,10 +420,13 @@ end
 M.get_git_root = make_git_root_fetch()
 
 ---Fetch a list of the conflicted files within the specified directory
+---@reference: https://stackoverflow.com/a/10874862
 ---@param dir string?
 ---@param callback fun(files: table<string, number[]>)
 function M.fetch_conflicted_files(dir, callback)
   M.get_git_root(dir, function(git_dir)
+    -- TODO: can the names returned in the diff command be full paths, which would
+    -- remove the need to fetch the git root
     fn.jobstart(fmt('git -C "%s" diff --name-only --diff-filter=U', git_dir), {
       stdout_buffered = true,
       on_stdout = function(_, data, _)
