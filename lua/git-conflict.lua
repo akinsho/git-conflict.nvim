@@ -1,13 +1,13 @@
 local M = {}
 
+local color = require('git-conflict.colors')
+local utils = require('git-conflict.utils')
+
 local fn = vim.fn
 local api = vim.api
 local fmt = string.format
 local map = vim.keymap.set
-
-local color = require('git-conflict.colors')
-local utils = require('git-conflict.utils')
-
+local job = utils.job
 -----------------------------------------------------------------------------//
 -- REFERENCES:
 -----------------------------------------------------------------------------//
@@ -344,19 +344,20 @@ local function fetch_conflicts()
     return
   end
   local fetch = utils.throttle(60000, function()
-    M.fetch_conflicted_files(fn.expand('%:p:h'), function(files)
+    M.get_conflicted_files(fn.expand('%:p:h'), function(files, repo)
       -- clear old extmarks
       for name, buf in pairs(visited_buffers) do
-        if not files[name] and buf.bufnr then
+        -- only clear buffers that are in the same repository as the conflicted files
+        -- as the result(files) might contain only files from a buffer in
+        -- a different repository in which case extmarks could be cleared for unrelated projects
+        if vim.startswith(name, repo) and not files[name] and buf.bufnr then
+          visited_buffers[name] = nil
           M.clear(buf.bufnr)
         end
       end
-      -- Replace the existing visited buffers with the freshly sourced files from git
-      local buffers = create_visited_buffers()
       for path, _ in pairs(files) do
-        buffers[path] = visited_buffers[path] or {}
+        visited_buffers[path] = visited_buffers[path] or {}
       end
-      visited_buffers = buffers
     end)
   end)
   fetch()
@@ -416,20 +417,30 @@ function M.setup(user_config)
   })
 end
 
----Fetch a list of the conflicted files within the specified directory
+---Get full path to the repository of the directory passed in
+---@param dir any
+---@param callback fun(data: string[])
+local function get_git_root(dir, callback)
+  job(fmt('git -C "%s" rev-parse --show-toplevel', dir), function(data)
+    callback(data[1])
+  end)
+end
+
+--- Get a list of the conflicted files within the specified directory
+--- NOTE: only conflicted files within the git repository of the directory passed in are returned
 ---@reference: https://stackoverflow.com/a/10874862
 ---@param dir string?
 ---@param callback fun(files: table<string, number[]>)
-function M.fetch_conflicted_files(dir, callback)
+function M.get_conflicted_files(dir, callback)
   -- we add a line prefix to the git command so that the full path is returned
-  local cmd = fmt(
-    'git -C "%s" diff --line-prefix=`git rev-parse --show-toplevel`%s --name-only --diff-filter=U',
-    dir,
-    sep
-  )
-  fn.jobstart(cmd, {
-    stdout_buffered = true,
-    on_stdout = function(_, data, _)
+  -- e.g. --line-prefix=`git rev-parse --show-toplevel`
+  get_git_root(dir, function(git_dir)
+    local cmd = fmt(
+      'git -C "%s" diff --line-prefix=%s --name-only --diff-filter=U',
+      git_dir,
+      git_dir .. sep
+    )
+    job(cmd, function(data)
       local files = {}
       for _, filename in ipairs(data) do
         if #filename > 0 then
@@ -438,9 +449,9 @@ function M.fetch_conflicted_files(dir, callback)
           end
         end
       end
-      callback(files)
-    end,
-  })
+      callback(files, git_dir)
+    end)
+  end)
 end
 
 ---@param bufnr number?

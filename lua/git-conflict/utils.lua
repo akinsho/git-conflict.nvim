@@ -4,6 +4,16 @@
 local M = {}
 
 local api = vim.api
+local fn = vim.fn
+
+function M.job(cmd, callback)
+  fn.jobstart(cmd, {
+    stdout_buffered = true,
+    on_stdout = function(_, data, _)
+      callback(data)
+    end,
+  })
+end
 
 ---Only call the passed function once every timeout in ms
 ---@param timeout number
