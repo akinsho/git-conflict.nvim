@@ -45,6 +45,8 @@ local PRIORITY = vim.highlight.priorities.user
 local NAMESPACE = api.nvim_create_namespace('git-conflict')
 local augroup_id = api.nvim_create_augroup('GitConflictCommands', { clear = true })
 
+local sep = package.config:sub(1, 1)
+
 local conflict_start = '^<<<<<<<'
 local conflict_middle = '^======='
 local conflict_end = '^>>>>>>>'
@@ -59,16 +61,20 @@ local config = {
   },
 }
 
--- Buffers that have been previously checked for conflicts and the saved tick at the time we last
--- checked
---- @type table<string, ConflictBufferCache>
-local visited_buffers = setmetatable({}, {
-  __index = function(t, k)
-    if type(k) == 'number' then
-      return t[api.nvim_buf_get_name(k)]
-    end
-  end,
-})
+--- @return table<string, ConflictBufferCache>
+local function create_visited_buffers()
+  return setmetatable({}, {
+    __index = function(t, k)
+      if type(k) == 'number' then
+        return t[api.nvim_buf_get_name(k)]
+      end
+    end,
+  })
+end
+
+--- A list of buffers that have conflicts in them. This is derived from
+--- git using the diff command, and updated at intervals
+local visited_buffers = create_visited_buffers()
 
 -----------------------------------------------------------------------------//
 -- Mappings
@@ -320,12 +326,12 @@ local function fetch_conflicts()
   local fetch = utils.throttle(60000, function()
     local dir = fn.expand('%:p:h')
     M.fetch_conflicted_files(dir, function(files)
-      for name, _ in pairs(files) do
-        local path = dir .. '/' .. name -- FIXME: use cross-compatible path separator
-        if not visited_buffers[path] then
-          visited_buffers[path] = {}
-        end
+      -- Replace the existing visited buffers with the freshly sourced files from git
+      local buffers = create_visited_buffers()
+      for path, _ in pairs(files) do
+        buffers[path] = visited_buffers[path] or {}
       end
+      visited_buffers = buffers
     end)
   end)
   fetch()
@@ -398,7 +404,7 @@ function M.fetch_conflicted_files(dir, callback)
       for _, filename in ipairs(data) do
         if #filename > 0 then
           if not files[filename] then
-            files[filename] = {}
+            files[dir .. sep .. filename] = {}
           end
         end
       end
