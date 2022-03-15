@@ -1,7 +1,7 @@
 #!/bin/bash
-[ -d ./git-repo/ ] && rm -rf ./git-repo/
-mkdir git-repo
-cd git-repo
+[ -d ./../conflict-test/ ] && rm -rf ./conflict-test/
+mkdir conflict-test
+cd conflict-test
 git init
 touch conflicted.lua
 git add conflicted.lua
