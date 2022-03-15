@@ -276,7 +276,7 @@ local function detect_conflicts(lines)
       line_map[index] = true
     end
   end
-  return #positions > 0, positions, line_map
+  return not vim.tbl_isempty(positions), positions, line_map
 end
 
 ---Helper function to find a conflict position based on a comparator function
@@ -315,27 +315,23 @@ local function set_cursor(pos, side)
   end
 end
 
----@param bufnr number
----@param has_conflict boolean
-local function toggle_diagnostics(bufnr, has_conflict)
-  if has_conflict then
-    vim.diagnostic.disable(bufnr)
-  else
-    vim.diagnostic.enable(bufnr)
-  end
-end
-
 ---Get the conflict marker positions for a buffer if any and update the buffers state
 ---@param bufnr number
 local function parse_buffer(bufnr, range_start, range_end)
   local lines = utils.get_buf_lines(range_start or 0, range_end or -1, bufnr)
+  local prev_conflicts = visited_buffers[bufnr].positions ~= nil
+    and not vim.tbl_isempty(visited_buffers[bufnr].positions)
   local has_conflict, positions, line_conflicts = detect_conflicts(lines)
+
   update_visited_buffers(bufnr, positions, line_conflicts)
   if has_conflict then
     highlight_conflicts(positions, lines)
   end
-  if config.disable_diagnostics then
-    toggle_diagnostics(bufnr, has_conflict)
+  if prev_conflicts ~= has_conflict then
+    api.nvim_do_autocmd(
+      'User',
+      { pattern = has_conflict and 'GitConflictDetected' or 'GitConflictResolved' }
+    )
   end
 end
 
@@ -350,6 +346,7 @@ local function fetch_conflicts()
         -- only clear buffers that are in the same repository as the conflicted files
         -- as the result(files) might contain only files from a buffer in
         -- a different repository in which case extmarks could be cleared for unrelated projects
+        -- FIXME: this will not work for nested repositories
         if vim.startswith(name, repo) and not files[name] and buf.bufnr then
           visited_buffers[name] = nil
           M.clear(buf.bufnr)
@@ -394,13 +391,25 @@ function M.setup(user_config)
     callback = fetch_conflicts,
   })
 
-  if config.default_mappings then
-    api.nvim_create_autocmd('BufEnter', {
+  if config.disable_diagnostics then
+    api.nvim_create_autocmd('User', {
+      group = augroup_id,
+      pattern = 'GitConflictDetected',
       callback = function()
         local bufnr = api.nvim_get_current_buf()
-        if visited_buffers[bufnr] then
+        vim.diagnostic.disable(bufnr)
+        if config.default_mappings then
           setup_buffer_mappings(bufnr)
         end
+      end,
+    })
+
+    api.nvim_create_autocmd('User', {
+      group = augroup_id,
+      pattern = 'GitConflictResolved',
+      callback = function()
+        local bufnr = api.nvim_get_current_buf()
+        vim.diagnostic.enable(bufnr)
       end,
     })
   end
