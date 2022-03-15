@@ -17,12 +17,15 @@ local job = utils.job
 -- https://stackoverflow.com/questions/3065650/whats-the-simplest-way-to-list-conflicted-files-in-git
 -- how to show a full path for files in a git diff command
 -- https://stackoverflow.com/questions/10459374/making-git-diff-stat-show-full-file-path
+-- Advanced merging
+-- https://git-scm.com/book/en/v2/Git-Tools-Advanced-Merging
 
 -----------------------------------------------------------------------------//
 -- TODO:
 -----------------------------------------------------------------------------//
 -- - [ ] Fix traversal order of prev and next conflict commands.
 -- - [ ] Clear buffer mappings once a conflict is resolved.
+-- - [ ] Support diff3 conflict style i.e. common ancestor
 
 -----------------------------------------------------------------------------//
 -- Types
