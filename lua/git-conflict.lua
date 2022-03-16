@@ -141,7 +141,6 @@ local function update_visited_buffers(buf, positions, conflicts)
   if not buf or not api.nvim_buf_is_valid(buf) then
     return
   end
-  local buf_positions = {}
   local name = api.nvim_buf_get_name(buf)
   -- If this buffer is not in the list
   if not visited_buffers[name] then
@@ -149,11 +148,8 @@ local function update_visited_buffers(buf, positions, conflicts)
   end
   visited_buffers[name].bufnr = buf
   visited_buffers[name].tick = vim.b[buf].changedtick
-  visited_buffers[name].positions = buf_positions
+  visited_buffers[name].positions = positions
   visited_buffers[name].lines = conflicts
-  for _, pos in ipairs(positions) do
-    buf_positions[{ pos.current.range_start, pos.incoming.range_end }] = pos
-  end
 end
 
 ---Set an extmark for each section of the git conflict
@@ -285,27 +281,39 @@ end
 ---Helper function to find a conflict position based on a comparator function
 ---@param bufnr number
 ---@param comparator number
----@return ConflictPosition
-local function find_position(bufnr, comparator)
+---@param opts table
+---@return ConflictPosition?
+local function find_position(bufnr, comparator, opts)
   local match = visited_buffers[bufnr]
   if not match then
     return
   end
   local line = utils.get_cursor_pos()
-  for range, position in pairs(match.positions) do
-    if type(range) == 'table' and comparator(line, range, position) then
+
+  if opts and opts.reverse then
+    for i = #match.positions, 1, -1 do
+      local position = match.positions[i]
+      if comparator(line, position) then
+        return position
+      end
+    end
+    return nil
+  end
+
+  for _, position in ipairs(match.positions) do
+    if comparator(line, position) then
       return position
     end
   end
+  return nil
 end
+
 ---Retrieves a conflict marker position by checking the visited buffers for a supported range
----each mark is keyed by it's starting and ending position so we loop through a buffers marks to
----see if the line number is within a certain marks range
 ---@param bufnr number
 ---@return table?
 local function get_current_position(bufnr)
-  return find_position(bufnr, function(line, range, _)
-    return range[1] <= line and range[2] >= line
+  return find_position(bufnr, function(line, position)
+    return position.current.range_start <= line and position.incoming.range_end >= line
   end)
 end
 
@@ -477,17 +485,17 @@ end
 
 ---@param side ConflictSide
 function M.find_next(side)
-  local pos = find_position(0, function(line, range, _)
-    return range[1] >= line and range[2] >= line
+  local pos = find_position(0, function(line, position)
+    return position.current.range_start >= line and position.incoming.range_end >= line
   end)
   set_cursor(pos, side)
 end
 
 ---@param side ConflictSide
 function M.find_prev(side)
-  local pos = find_position(0, function(line, range, _)
-    return range[1] <= line and range[2] <= line
-  end)
+  local pos = find_position(0, function(line, position)
+    return position.current.range_start <= line and position.incoming.range_end <= line
+  end, { reverse = true })
   set_cursor(pos, side)
 end
 
