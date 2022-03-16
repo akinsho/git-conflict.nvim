@@ -136,8 +136,7 @@ end
 ---positions are keyed by a list of range start and end for each mark
 ---@param buf number
 ---@param positions ConflictPosition[]
----@param conflicts table<string, boolean>
-local function update_visited_buffers(buf, positions, conflicts)
+local function update_visited_buffers(buf, positions)
   if not buf or not api.nvim_buf_is_valid(buf) then
     return
   end
@@ -149,7 +148,6 @@ local function update_visited_buffers(buf, positions, conflicts)
   visited_buffers[name].bufnr = buf
   visited_buffers[name].tick = vim.b[buf].changedtick
   visited_buffers[name].positions = positions
-  visited_buffers[name].lines = conflicts
 end
 
 ---Set an extmark for each section of the git conflict
@@ -240,9 +238,6 @@ end
 ---@return table<number, boolean>
 local function detect_conflicts(lines)
   local positions = {}
-  -- A mapping of line number to bool for lines that have conflicts on them
-  -- allowing an O(1) check if a line is conflicted
-  local line_map = {}
   local position, has_start, has_middle = nil, false, false
   for index, line in ipairs(lines) do
     local lnum = index - 1
@@ -267,15 +262,11 @@ local function detect_conflicts(lines)
       position.incoming.range_end = lnum
       position.incoming.content_end = lnum - 1
       positions[#positions + 1] = position
-      line_map[index] = true
 
       position, has_start, has_middle = nil, false, false
     end
-    if position then
-      line_map[index] = true
-    end
   end
-  return not vim.tbl_isempty(positions), positions, line_map
+  return not vim.tbl_isempty(positions), positions
 end
 
 ---Helper function to find a conflict position based on a comparator function
@@ -332,9 +323,9 @@ local function parse_buffer(bufnr, range_start, range_end)
   local lines = utils.get_buf_lines(range_start or 0, range_end or -1, bufnr)
   local prev_conflicts = visited_buffers[bufnr].positions ~= nil
     and not vim.tbl_isempty(visited_buffers[bufnr].positions)
-  local has_conflict, positions, line_conflicts = detect_conflicts(lines)
+  local has_conflict, positions = detect_conflicts(lines)
 
-  update_visited_buffers(bufnr, positions, line_conflicts)
+  update_visited_buffers(bufnr, positions)
   if has_conflict then
     highlight_conflicts(positions, lines)
   end
