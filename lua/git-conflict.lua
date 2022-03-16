@@ -24,7 +24,7 @@ local job = utils.job
 -- TODO:
 -----------------------------------------------------------------------------//
 -- - [x] Fix traversal order of prev and next conflict commands.
--- - [ ] Clear buffer mappings once a conflict is resolved.
+-- - [x] Clear buffer mappings once a conflict is resolved.
 -- - [ ] Support diff3 conflict style i.e. common ancestor
 
 -----------------------------------------------------------------------------//
@@ -129,6 +129,39 @@ local function setup_buffer_mappings(bufnr)
   map('n', 'ct', '<Plug>(git-conflict-theirs)', opts)
   map('n', '[x', '<Plug>(git-conflict-next-conflict)', opts)
   map('n', ']x', '<Plug>(git-conflict-prev-conflict)', opts)
+  vim.b[bufnr].conflict_mappings_set = true
+end
+
+---@param key string
+---@param mode "'n'|'v'|'o'|'nv'|'nvo'"
+---@return boolean
+local function is_mapped(key, mode)
+  return fn.hasmapto(key, mode or 'n') > 0
+end
+
+local function clear_buffer_mappings(bufnr)
+  if not bufnr or not vim.b[bufnr].conflict_mappings_set then
+    return
+  end
+  if is_mapped('co') then
+    api.nvim_buf_del_keymap(bufnr, 'n', 'co')
+  end
+  if is_mapped('cb') then
+    api.nvim_buf_del_keymap(bufnr, 'n', 'cb')
+  end
+  if is_mapped('c0') then
+    api.nvim_buf_del_keymap(bufnr, 'n', 'c0')
+  end
+  if is_mapped('ct') then
+    api.nvim_buf_del_keymap(bufnr, 'n', 'ct')
+  end
+  if is_mapped('[x') then
+    api.nvim_buf_del_keymap(bufnr, 'n', '[x')
+  end
+  if is_mapped(']x') then
+    api.nvim_buf_del_keymap(bufnr, 'n', ']x')
+  end
+  vim.b[bufnr].conflict_mappings_set = false
 end
 -----------------------------------------------------------------------------//
 
@@ -412,6 +445,9 @@ function M.setup(user_config)
       callback = function()
         local bufnr = api.nvim_get_current_buf()
         vim.diagnostic.enable(bufnr)
+        if config.default_mappings then
+          clear_buffer_mappings(bufnr)
+        end
       end,
     })
   end
