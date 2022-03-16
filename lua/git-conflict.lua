@@ -23,7 +23,7 @@ local job = utils.job
 -----------------------------------------------------------------------------//
 -- TODO:
 -----------------------------------------------------------------------------//
--- - [ ] Fix traversal order of prev and next conflict commands.
+-- - [x] Fix traversal order of prev and next conflict commands.
 -- - [ ] Clear buffer mappings once a conflict is resolved.
 -- - [ ] Support diff3 conflict style i.e. common ancestor
 
@@ -266,7 +266,7 @@ local function detect_conflicts(lines)
       position, has_start, has_middle = nil, false, false
     end
   end
-  return not vim.tbl_isempty(positions), positions
+  return #positions > 0, positions
 end
 
 ---Helper function to find a conflict position based on a comparator function
@@ -322,7 +322,7 @@ end
 local function parse_buffer(bufnr, range_start, range_end)
   local lines = utils.get_buf_lines(range_start or 0, range_end or -1, bufnr)
   local prev_conflicts = visited_buffers[bufnr].positions ~= nil
-    and not vim.tbl_isempty(visited_buffers[bufnr].positions)
+    and #visited_buffers[bufnr].positions > 0
   local has_conflict, positions = detect_conflicts(lines)
 
   update_visited_buffers(bufnr, positions)
