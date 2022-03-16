@@ -44,6 +44,28 @@ end}
 - `GitConflictNextConflict` - Move to the next conflict.
 - `GitConflictPrevConflict` - Move to the previous conflict.
 
+## Autocommands
+
+When a conflict is detected by this plugin a `User` autocommand is fired
+called `GitConflictDetected`. When this is resolved another command is
+fired called `GitConflictResolved`.
+
+Either of these can be used to run logic whilst dealing with conflicts
+e.g.
+
+```lua
+vim.api.nvim_create_autocommand('User', {
+  pattern = 'GitConflictDetected'
+  callback = function()
+    vim.notify('Conflict detected in '..vim.fn.expand('<afile>'))
+    vim.keymap.set('n', 'cww', function()
+      engage.conflict_buster()
+    end)
+  end
+})
+
+```
+
 ## Mappings
 
 This plugin offers default buffer local mappings inside of conflicted files. This is primarily because applying these buffers only to relevant buffers
