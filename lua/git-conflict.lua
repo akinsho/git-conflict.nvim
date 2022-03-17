@@ -426,31 +426,33 @@ function M.setup(user_config)
     callback = fetch_conflicts,
   })
 
-  if config.disable_diagnostics then
-    api.nvim_create_autocmd('User', {
-      group = augroup_id,
-      pattern = 'GitConflictDetected',
-      callback = function()
-        local bufnr = api.nvim_get_current_buf()
+  api.nvim_create_autocmd('User', {
+    group = augroup_id,
+    pattern = 'GitConflictDetected',
+    callback = function()
+      local bufnr = api.nvim_get_current_buf()
+      if config.disable_diagnostics then
         vim.diagnostic.disable(bufnr)
-        if config.default_mappings then
-          setup_buffer_mappings(bufnr)
-        end
-      end,
-    })
+      end
+      if config.default_mappings then
+        setup_buffer_mappings(bufnr)
+      end
+    end,
+  })
 
-    api.nvim_create_autocmd('User', {
-      group = augroup_id,
-      pattern = 'GitConflictResolved',
-      callback = function()
-        local bufnr = api.nvim_get_current_buf()
+  api.nvim_create_autocmd('User', {
+    group = augroup_id,
+    pattern = 'GitConflictResolved',
+    callback = function()
+      local bufnr = api.nvim_get_current_buf()
+      if config.disable_diagnostics then
         vim.diagnostic.enable(bufnr)
-        if config.default_mappings then
-          clear_buffer_mappings(bufnr)
-        end
-      end,
-    })
-  end
+      end
+      if config.default_mappings then
+        clear_buffer_mappings(bufnr)
+      end
+    end,
+  })
 
   api.nvim_set_decoration_provider(NAMESPACE, {
     on_buf = function(_, bufnr, _)
