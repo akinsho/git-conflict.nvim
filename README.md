@@ -7,7 +7,8 @@ This plugin was inspired by [conflict-marker.vim](https://github.com/rhysd/confl
 
 ## Status
 
-This plugin is a work in progress, and not yet ready for stable use.
+This plugin is under active development, it should generally work but you're likely to
+encounter some bugs during usage. The current commands and mappings are also subject to change.
 
 ## Requirements
 
