@@ -101,14 +101,25 @@ local visited_buffers = create_visited_buffers()
 -----------------------------------------------------------------------------//
 
 local function set_commands()
-  vim.cmd([[
-    command! -nargs=0 GitConflictChooseOurs lua require('git-conflict').choose('ours')
-    command! -nargs=0 GitConflictChooseTheirs lua require('git-conflict').choose('theirs')
-    command! -nargs=0 GitConflictChooseBoth lua require('git-conflict').choose('both')
-    command! -nargs=0 GitConflictChooseNone lua require('git-conflict').choose('none')
-    command! -nargs=0 GitConflictNextConflict lua require('git-conflict').find_next('ours')
-    command! -nargs=0 GitConflictPrevConflict lua require('git-conflict').find_prev('ours')
-  ]])
+  local command = api.nvim_add_user_command
+  command('GitConflictChooseOurs', function()
+    M.choose('ours')
+  end, { nargs = 0 })
+  command('GitConflictChooseTheirs', function()
+    M.choose('theirs')
+  end, { nargs = 0 })
+  command('GitConflictChooseBoth', function()
+    M.choose('both')
+  end, { nargs = 0 })
+  command('GitConflictChooseNone', function()
+    M.choose('none')
+  end, { nargs = 0 })
+  command('GitConflictNextConflict', function()
+    M.find_next('ours')
+  end, { nargs = 0 })
+  command('GitConflictPrevConflict', function()
+    M.find_prev('ours')
+  end, { nargs = 0 })
 end
 
 local function set_plug_mappings()
