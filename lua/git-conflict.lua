@@ -102,6 +102,10 @@ local visited_buffers = create_visited_buffers()
 
 local function set_commands()
   local command = api.nvim_add_user_command
+  command("GitConflictQf",function ()
+    vim.cmd([[copen]])
+    vim.cmd(string.format([[cexpr system('git grep -Hn  "%s"')]], conflict_start))
+  end,{ nargs = 0 })
   command('GitConflictChooseOurs', function()
     M.choose('ours')
   end, { nargs = 0 })

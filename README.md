@@ -45,6 +45,7 @@ end}
 - `GitConflictChooseNone` - Select both none of the changes.
 - `GitConflictNextConflict` - Move to the next conflict.
 - `GitConflictPrevConflict` - Move to the previous conflict.
+- `GitConflictQf` - Get all conflict to quickfix 
 
 ## Autocommands
 
