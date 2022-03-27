@@ -65,8 +65,19 @@ local SIDES = {
   ours = 'ours',
   theirs = 'theirs',
   both = 'both',
+  base = 'base',
   none = 'none',
 }
+
+-- A mapping between the internal names and the display names
+local name_map = {
+  ours = 'current',
+  theirs = 'incoming',
+  base = 'ancestor',
+  both = 'both',
+  none = 'none',
+}
+
 local CURRENT_HL = 'GitConflictCurrent'
 local INCOMING_HL = 'GitConflictIncoming'
 local ANCESTOR_HL = 'GitConflictAncestor'
@@ -137,6 +148,9 @@ local function set_commands()
   end, { nargs = 0 })
   command('GitConflictChooseBoth', function()
     M.choose('both')
+  end, { nargs = 0 })
+  command('GitConflictChooseBase', function()
+    M.choose('base')
   end, { nargs = 0 })
   command('GitConflictChooseNone', function()
     M.choose('none')
@@ -351,12 +365,14 @@ local function detect_conflicts(lines)
     if has_start and line:match(conflict_ancestor) then
       has_ancestor = true
       position.ancestor.range_start = lnum
+      position.ancestor.content_start = lnum + 1
       position.current.range_end = lnum - 1
       position.current.content_end = lnum - 1
     end
     if has_start and line:match(conflict_middle) then
       has_middle = true
       if has_ancestor then
+        position.ancestor.content_end = lnum - 1
         position.ancestor.range_end = lnum - 1
       else
         position.current.range_end = lnum - 1
@@ -661,8 +677,8 @@ function M.choose(side)
     return
   end
   local lines = {}
-  if side == SIDES.ours or side == SIDES.theirs then
-    local data = side == SIDES.ours and position.current or position.incoming
+  if vim.tbl_contains({ SIDES.ours, SIDES.theirs, SIDES.base }, side) then
+    local data = position[name_map[side]]
     lines = utils.get_buf_lines(data.content_start, data.content_end + 1)
   elseif side == SIDES.both then
     local first = utils.get_buf_lines(
