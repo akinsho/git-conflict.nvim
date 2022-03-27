@@ -108,8 +108,10 @@ local function set_commands()
   local command = api.nvim_add_user_command
   command('GitConflictListQf', function()
     M.conflicts_to_qf_items(function(items)
-      fn.setqflist(items, 'r')
-      vim.cmd([[copen]])
+      if #items > 0 then
+        fn.setqflist(items, 'r')
+        vim.cmd([[copen]])
+      end
     end)
   end, { nargs = 0 })
   command('GitConflictChooseOurs', function()
