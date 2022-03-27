@@ -275,21 +275,12 @@ local function draw_section_label(bufnr, hl_group, label, lnum)
   })
 end
 
----@param name string?
----@return table<string, boolean|number|string>
-local function get_hl(name)
-  if not name then
-    return {}
-  end
-  return api.nvim_get_hl_by_name(name, true)
-end
-
 ---Derive the colour of the section label highlights based on each sections highlights
 ---@param highlights ConflictHighlights
 local function set_highlights(highlights)
-  local current_color = get_hl(highlights.current)
-  local incoming_color = get_hl(highlights.incoming)
-  local ancestor_color = get_hl(highlights.ancestor)
+  local current_color = utils.get_hl(highlights.current)
+  local incoming_color = utils.get_hl(highlights.incoming)
+  local ancestor_color = utils.get_hl(highlights.ancestor)
   local current_bg = current_color.background or DEFAULT_CURRENT_BG_COLOR
   local incoming_bg = incoming_color.background or DEFAULT_INCOMING_BG_COLOR
   local ancestor_bg = ancestor_color.background or DEFAULT_ANCESTOR_BG_COLOR
@@ -330,6 +321,7 @@ local function highlight_conflicts(positions, lines)
     position.marks = {
       current = { label = curr_label_id, content = curr_id },
       incoming = { label = inc_label_id, content = inc_id },
+      ancestor = {},
     }
     if not vim.tbl_isempty(position.ancestor) then
       local ancestor_start = position.ancestor.range_start
@@ -702,7 +694,9 @@ function M.choose(side)
   api.nvim_buf_set_lines(0, pos_start, pos_end, false, lines)
   api.nvim_buf_del_extmark(0, NAMESPACE, position.marks.incoming.label)
   api.nvim_buf_del_extmark(0, NAMESPACE, position.marks.current.label)
-  api.nvim_buf_del_extmark(0, NAMESPACE, position.marks.ancestor.label)
+  if position.marks.ancestor.label then
+    api.nvim_buf_del_extmark(0, NAMESPACE, position.marks.ancestor.label)
+  end
   parse_buffer(bufnr)
 end
 

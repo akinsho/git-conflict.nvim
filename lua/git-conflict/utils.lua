@@ -57,4 +57,13 @@ function M.is_valid_buf(bufnr)
   return #vim.bo[bufnr].buftype == 0 and vim.bo[bufnr].modifiable
 end
 
+---@param name string?
+---@return table<string, boolean|number|string>
+function M.get_hl(name)
+  if not name then
+    return {}
+  end
+  return api.nvim_get_hl_by_name(name, true)
+end
+
 return M
