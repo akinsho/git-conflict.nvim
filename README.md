@@ -2,7 +2,6 @@
 
 https://user-images.githubusercontent.com/22454918/159362564-a66d8c23-f7dc-4d1d-8e88-c5c73a49047e.mov
 
-
 A plugin to visualise and resolve conflicts in neovim.
 This plugin was inspired by [conflict-marker.vim](https://github.com/rhysd/conflict-marker.vim)
 
@@ -45,7 +44,13 @@ end}
 - `GitConflictChooseNone` - Select both none of the changes.
 - `GitConflictNextConflict` - Move to the next conflict.
 - `GitConflictPrevConflict` - Move to the previous conflict.
-- `GitConflictQf` - Get all conflict to quickfix 
+- `GitConflictListQf` - Get all conflict to quickfix
+
+### Listing conflicts
+
+You can list conflicts in the quick fix list using the `GitConflictListQf` command
+
+<img width="475" alt="Screen Shot 2022-03-27 at 12 03 43" src="https://user-images.githubusercontent.com/22454918/160278511-705a0361-a387-4fc1-8b20-bd799bf85b82.png">
 
 ## Autocommands
 
