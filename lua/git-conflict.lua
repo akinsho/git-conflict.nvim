@@ -374,7 +374,10 @@ local function parse_buffer(bufnr, range_start, range_end)
     highlight_conflicts(positions, lines)
   end
   if prev_conflicts ~= has_conflict then
-    api.nvim_do_autocmd(
+    -- TODO: This should be removed in 2 weeks (i.e. early April 2022) once people
+    -- have had time to migrate to the new nightly
+    local exec_autocmd = api.nvim_do_autocmd or api.nvim_exec_autocmd
+    exec_autocmd(
       'User',
       { pattern = has_conflict and 'GitConflictDetected' or 'GitConflictResolved' }
     )
