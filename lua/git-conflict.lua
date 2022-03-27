@@ -37,10 +37,14 @@ local job = utils.job
 --- @field current string
 --- @field incoming string
 
+--- @class Range
+--- @field range_start number
+--- @field range_end number
+
 --- @class ConflictPosition
---- @field incoming table
---- @field middle table
---- @field current table
+--- @field incoming Range
+--- @field middle Range
+--- @field current Range
 
 --- @class ConflictBufferCache
 --- @field lines table<number, boolean> map of conflicted line numbers
@@ -102,6 +106,14 @@ local visited_buffers = create_visited_buffers()
 
 local function set_commands()
   local command = api.nvim_add_user_command
+  command('GitConflictListQf', function()
+    M.conflicts_to_qf_items(function(items)
+      if #items > 0 then
+        fn.setqflist(items, 'r')
+        vim.cmd([[copen]])
+      end
+    end)
+  end, { nargs = 0 })
   command('GitConflictChooseOurs', function()
     M.choose('ours')
   end, { nargs = 0 })
@@ -514,6 +526,51 @@ function M.get_conflicted_files(dir, callback)
       end
       callback(files, git_dir)
     end)
+  end)
+end
+
+--- Add additional metadata to a quickfix entry if we have already visited the buffer and have that
+--- information
+---@param item table<string, number|string>
+---@param items table<string, number|string>[]
+---@param visited_buf ConflictBufferCache
+local function quickfix_items_from_positions(item, items, visited_buf)
+  for _, pos in ipairs(visited_buf.positions) do
+    for key, value in pairs(pos) do
+      if vim.tbl_contains({ 'incoming', 'current' }, key) then
+        local lnum = value.range_start + 1
+        local next_item = vim.deepcopy(item)
+        next_item.text = fmt('%s change at %d', key, lnum)
+        next_item.lnum = lnum
+        next_item.col = 0
+        table.insert(items, next_item)
+      end
+    end
+  end
+end
+
+--- Convert the conflicts detected via get conflicted files into a list of
+-- quickfix entries.
+---@param callback fun(files: table<string, number[]>)
+function M.conflicts_to_qf_items(callback)
+  local items = {}
+  M.get_conflicted_files(fn.expand('%:p:h'), function(files)
+    for filename, _ in pairs(files) do
+      local item = {
+        filename = filename,
+        pattern = conflict_start,
+        text = 'git conflict',
+        type = 'E',
+        valid = 1,
+      }
+      local visited_buf = visited_buffers[filename]
+      if visited_buf then
+        quickfix_items_from_positions(item, items, visited_buf)
+      else
+        table.insert(items, item)
+      end
+    end
+    callback(items)
   end)
 end
 
