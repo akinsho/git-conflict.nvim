@@ -374,7 +374,7 @@ local function parse_buffer(bufnr, range_start, range_end)
     highlight_conflicts(positions, lines)
   end
   if prev_conflicts ~= has_conflict then
-    api.nvim_do_autocmd(
+    (api.nvim_do_autocmd or api.nvim_exec_autocmd)(
       'User',
       { pattern = has_conflict and 'GitConflictDetected' or 'GitConflictResolved' }
     )
