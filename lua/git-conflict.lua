@@ -70,6 +70,9 @@ local sep = package.config:sub(1, 1)
 local conflict_start = '^<<<<<<<'
 local conflict_middle = '^======='
 local conflict_end = '^>>>>>>>'
+
+local DEFAULT_CURRENT_BG_COLOR = 4218238 -- #405d7e
+local DEFAULT_INCOMING_BG_COLOR = 3229523 -- #314753
 -----------------------------------------------------------------------------//
 
 local config = {
@@ -236,8 +239,8 @@ end
 local function set_highlights(highlights)
   local current_color = api.nvim_get_hl_by_name(highlights.current, true)
   local incoming_color = api.nvim_get_hl_by_name(highlights.incoming, true)
-  local current_bg = current_color.background or 4218238
-  local incoming_bg = incoming_color.background or 3229523
+  local current_bg = current_color.background or DEFAULT_CURRENT_BG_COLOR
+  local incoming_bg = incoming_color.background or DEFAULT_INCOMING_BG_COLOR
   local current_label_bg = color.shade_color(current_bg, -10)
   local incoming_label_bg = color.shade_color(incoming_bg, -10)
   api.nvim_set_hl(0, CURRENT_LABEL_HL, { background = current_bg, bold = true })
