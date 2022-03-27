@@ -598,7 +598,7 @@ end
 local function quickfix_items_from_positions(item, items, visited_buf)
   for _, pos in ipairs(visited_buf.positions) do
     for key, value in pairs(pos) do
-      if vim.tbl_contains({ 'incoming', 'current' }, key) then
+      if vim.tbl_contains({ name_map.ours, name_map.theirs, name_map.base }, key) then
         local lnum = value.range_start + 1
         local next_item = vim.deepcopy(item)
         next_item.text = fmt('%s change at %d', key, lnum)
