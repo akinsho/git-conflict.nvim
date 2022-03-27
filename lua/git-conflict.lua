@@ -53,6 +53,11 @@ local job = utils.job
 --- @field tick number
 --- @field bufnr number
 
+--- @class GitConflictConfig
+--- @field default_mappings boolean
+--- @field disable_diagnostics boolean
+--- @field highlights ConflictHighlights
+
 -----------------------------------------------------------------------------//
 -- Constants
 -----------------------------------------------------------------------------//
@@ -81,16 +86,17 @@ local conflict_ancestor = '^|||||||'
 
 local DEFAULT_CURRENT_BG_COLOR = 4218238 -- #405d7e
 local DEFAULT_INCOMING_BG_COLOR = 3229523 -- #314753
-local DEFAULT_ANCESTOR_BG_COLOR = 3229523 -- #314753
+local DEFAULT_ANCESTOR_BG_COLOR = 6824314 -- #68217A
 -----------------------------------------------------------------------------//
 
+--- @type GitConflictConfig
 local config = {
   default_mappings = true,
   disable_diagnostics = false,
   highlights = {
     current = 'DiffText',
     incoming = 'DiffAdd',
-    ancestor = 'DiffDelete',
+    ancestor = nil,
   },
 }
 
@@ -255,20 +261,30 @@ local function draw_section_label(bufnr, hl_group, label, lnum)
   })
 end
 
+---@param name string?
+---@return table<string, boolean|number|string>
+local function get_hl(name)
+  if not name then
+    return {}
+  end
+  return api.nvim_get_hl_by_name(name, true)
+end
+
 ---Derive the colour of the section label highlights based on each sections highlights
 ---@param highlights ConflictHighlights
 local function set_highlights(highlights)
-  local current_color = api.nvim_get_hl_by_name(highlights.current, true)
-  local incoming_color = api.nvim_get_hl_by_name(highlights.incoming, true)
-  local ancestor_color = api.nvim_get_hl_by_name(highlights.ancestor, true)
+  local current_color = get_hl(highlights.current)
+  local incoming_color = get_hl(highlights.incoming)
+  local ancestor_color = get_hl(highlights.ancestor)
   local current_bg = current_color.background or DEFAULT_CURRENT_BG_COLOR
   local incoming_bg = incoming_color.background or DEFAULT_INCOMING_BG_COLOR
+  local ancestor_bg = ancestor_color.background or DEFAULT_ANCESTOR_BG_COLOR
   local current_label_bg = color.shade_color(current_bg, -10)
   local incoming_label_bg = color.shade_color(incoming_bg, -10)
-  local ancestor_label_bg = color.shade_color(ancestor_color.background, -10)
+  local ancestor_label_bg = color.shade_color(ancestor_bg, -10)
   api.nvim_set_hl(0, CURRENT_LABEL_HL, { background = current_bg, bold = true })
   api.nvim_set_hl(0, INCOMING_LABEL_HL, { background = incoming_bg, bold = true })
-  api.nvim_set_hl(0, ANCESTOR_LABEL_HL, { background = ancestor_color.background, bold = true })
+  api.nvim_set_hl(0, ANCESTOR_LABEL_HL, { background = ancestor_bg, bold = true })
   api.nvim_set_hl(0, CURRENT_HL, { background = current_label_bg })
   api.nvim_set_hl(0, INCOMING_HL, { background = incoming_label_bg })
   api.nvim_set_hl(0, ANCESTOR_HL, { background = ancestor_label_bg })
