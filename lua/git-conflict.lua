@@ -457,29 +457,43 @@ local function parse_buffer(bufnr, range_start, range_end)
   end
 end
 
+--- @type table<string, number>
+local visited_repos = {}
+
+--- Fetch the conflicted files for the current buffer file's repo
+--- this is throttled by tracking when last we checked for conflicts
+--- and if it is over this interval we check again otherwise we return
+--- TODO: this is a best effort but far from ideal, if a conflict happens
+--- before the next interval within the same repo then entering the conflicted
+--- buffer will not trigger a check. Ideally we could track the git directory's
+--- changes and trigger a check if there is a change. The issue with this is that
+--- not all conflicts result in a visible change in the git repo.
 local function fetch_conflicts()
   if not utils.is_valid_buf() then
     return
   end
-  local fetch = utils.throttle(60000, function()
-    M.get_conflicted_files(fn.expand('%:p:h'), function(files, repo)
-      -- clear old extmarks
-      for name, buf in pairs(visited_buffers) do
-        -- only clear buffers that are in the same repository as the conflicted files
-        -- as the result(files) might contain only files from a buffer in
-        -- a different repository in which case extmarks could be cleared for unrelated projects
-        -- FIXME: this will not work for nested repositories
-        if vim.startswith(name, repo) and not files[name] and buf.bufnr then
-          visited_buffers[name] = nil
-          M.clear(buf.bufnr)
-        end
+  local buf_dir = fn.expand('%:p:h')
+  for repo_path, time in pairs(visited_repos) do
+    if vim.startswith(buf_dir, repo_path) and (time and os.difftime(os.time(), time) <= 60) then
+      return
+    end
+  end
+  M.get_conflicted_files(buf_dir, function(files, repo)
+    visited_repos[repo] = os.time()
+    for name, buf in pairs(visited_buffers) do
+      -- only clear buffers that are in the same repository as the conflicted files
+      -- as the result(files) might contain only files from a buffer in
+      -- a different repository in which case extmarks could be cleared for unrelated projects
+      -- FIXME: this will not work for nested repositories
+      if vim.startswith(name, repo) and not files[name] and buf.bufnr then
+        visited_buffers[name] = nil
+        M.clear(buf.bufnr)
       end
-      for path, _ in pairs(files) do
-        visited_buffers[path] = visited_buffers[path] or {}
-      end
-    end)
+    end
+    for path, _ in pairs(files) do
+      visited_buffers[path] = visited_buffers[path] or {}
+    end
   end)
-  fetch()
 end
 
 ---Process a buffer if the changed tick has changed
