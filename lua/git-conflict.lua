@@ -618,7 +618,7 @@ local function quickfix_items_from_positions(item, items, visited_buf)
       then
         local lnum = value.range_start + 1
         local next_item = vim.deepcopy(item)
-        next_item.text = fmt('%s change at %d', key, lnum)
+        next_item.text = fmt('%s change', key, lnum)
         next_item.lnum = lnum
         next_item.col = 0
         table.insert(items, next_item)
