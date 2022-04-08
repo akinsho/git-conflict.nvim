@@ -607,6 +607,9 @@ end
 ---@param items table<string, number|string>[]
 ---@param visited_buf ConflictBufferCache
 local function quickfix_items_from_positions(item, items, visited_buf)
+  if vim.tbl_isempty(visited_buf.positions) then
+    return
+  end
   for _, pos in ipairs(visited_buf.positions) do
     for key, value in pairs(pos) do
       if
