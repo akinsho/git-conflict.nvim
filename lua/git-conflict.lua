@@ -131,7 +131,7 @@ local visited_buffers = create_visited_buffers()
 -----------------------------------------------------------------------------//
 
 local function set_commands()
-  local command = api.nvim_add_user_command
+  local command = api.nvim_create_user_command
   command('GitConflictListQf', function()
     M.conflicts_to_qf_items(function(items)
       if #items > 0 then
