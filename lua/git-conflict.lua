@@ -86,7 +86,7 @@ local INCOMING_LABEL_HL = 'GitConflictIncomingLabel'
 local ANCESTOR_LABEL_HL = 'GitConflictAncestorLabel'
 local PRIORITY = vim.highlight.priorities.user
 local NAMESPACE = api.nvim_create_namespace('git-conflict')
-local augroup_id = api.nvim_create_augroup('GitConflictCommands', { clear = true })
+local AUGROUP_NAME = 'GitConflictCommands'
 
 local sep = package.config:sub(1, 1)
 
@@ -519,13 +519,14 @@ function M.setup(user_config)
   set_commands()
   set_plug_mappings()
 
+  api.nvim_create_augroup(AUGROUP_NAME, { clear = true })
   api.nvim_create_autocmd({ 'VimEnter', 'BufEnter', 'ShellCmdPost' }, {
-    group = augroup_id,
+    group = AUGROUP_NAME,
     callback = fetch_conflicts,
   })
 
   api.nvim_create_autocmd('User', {
-    group = augroup_id,
+    group = AUGROUP_NAME,
     pattern = 'GitConflictDetected',
     callback = function()
       local bufnr = api.nvim_get_current_buf()
@@ -539,7 +540,7 @@ function M.setup(user_config)
   })
 
   api.nvim_create_autocmd('User', {
-    group = augroup_id,
+    group = AUGROUP_NAME,
     pattern = 'GitConflictResolved',
     callback = function()
       local bufnr = api.nvim_get_current_buf()
