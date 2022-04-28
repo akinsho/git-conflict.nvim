@@ -36,7 +36,7 @@ end
 ---Wrapper around `api.nvim_buf_get_lines` which defaults to the current buffer
 ---@param start number
 ---@param _end number
----@param buf number
+---@param buf number?
 ---@return string[]
 function M.get_buf_lines(start, _end, buf)
   return api.nvim_buf_get_lines(buf or 0, start, _end, false)

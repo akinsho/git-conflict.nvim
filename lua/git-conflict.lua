@@ -185,7 +185,7 @@ local function setup_buffer_mappings(bufnr)
 end
 
 ---@param key string
----@param mode "'n'|'v'|'o'|'nv'|'nvo'"
+---@param mode "'n'|'v'|'o'|'nv'|'nvo'"?
 ---@return boolean
 local function is_mapped(key, mode)
   return fn.hasmapto(key, mode or 'n') > 0
@@ -215,6 +215,7 @@ local function clear_buffer_mappings(bufnr)
   end
   vim.b[bufnr].conflict_mappings_set = false
 end
+
 -----------------------------------------------------------------------------//
 
 ---Add the positions to the buffer in our in memory buffer list
@@ -389,7 +390,7 @@ end
 ---Helper function to find a conflict position based on a comparator function
 ---@param bufnr number
 ---@param comparator number
----@param opts table
+---@param opts table?
 ---@return ConflictPosition?
 local function find_position(bufnr, comparator, opts)
   local match = visited_buffers[bufnr]
@@ -439,7 +440,7 @@ end
 local function parse_buffer(bufnr, range_start, range_end)
   local lines = utils.get_buf_lines(range_start or 0, range_end or -1, bufnr)
   local prev_conflicts = visited_buffers[bufnr].positions ~= nil
-    and #visited_buffers[bufnr].positions > 0
+      and #visited_buffers[bufnr].positions > 0
   local has_conflict, positions = detect_conflicts(lines)
 
   update_visited_buffers(bufnr, positions)
@@ -578,7 +579,7 @@ end
 --- NOTE: only conflicted files within the git repository of the directory passed in are returned
 ---@reference: https://stackoverflow.com/a/10874862
 ---@param dir string?
----@param callback fun(files: table<string, number[]>)
+---@param callback fun(files: table<string, number[]>, string)
 function M.get_conflicted_files(dir, callback)
   -- we add a line prefix to the git command so that the full path is returned
   -- e.g. --line-prefix=`git rev-parse --show-toplevel`
@@ -613,9 +614,8 @@ local function quickfix_items_from_positions(item, items, visited_buf)
   end
   for _, pos in ipairs(visited_buf.positions) do
     for key, value in pairs(pos) do
-      if
-        vim.tbl_contains({ name_map.ours, name_map.theirs, name_map.base }, key)
-        and not vim.tbl_isempty(value)
+      if vim.tbl_contains({ name_map.ours, name_map.theirs, name_map.base }, key)
+          and not vim.tbl_isempty(value)
       then
         local lnum = value.range_start + 1
         local next_item = vim.deepcopy(item)
