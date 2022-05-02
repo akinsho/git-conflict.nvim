@@ -13,7 +13,7 @@ encounter some bugs during usage. The current commands and mappings are also sub
 ## Requirements
 
 - `git`
-- `nvim 0.7+` - it's easier to build plugins with some of the nightly APIs such as `keymap.set` or `nvim_create_autocmd`
+- `nvim 0.7+`
 
 ## Installation
 
@@ -70,6 +70,7 @@ vim.api.nvim_create_autocommand('User', {
     vim.notify('Conflict detected in '..vim.fn.expand('<afile>'))
     vim.keymap.set('n', 'cww', function()
       engage.conflict_buster()
+      create_buffer_local_mappings()
     end)
   end
 })
@@ -78,7 +79,7 @@ vim.api.nvim_create_autocommand('User', {
 
 ## Mappings
 
-This plugin offers default buffer local mappings inside of conflicted files. This is primarily because applying these buffers only to relevant buffers
+This plugin offers default buffer local mappings inside of conflicted files. This is primarily because applying these mappings only to relevant buffers
 is not possible through global mappings. A user can however disable these by setting `default_mappings = false` anyway and create global mappings as shown below.
 The default mappings are:
 
