@@ -446,6 +446,8 @@ local function parse_buffer(bufnr, range_start, range_end)
   update_visited_buffers(bufnr, positions)
   if has_conflict then
     highlight_conflicts(positions, lines)
+  else
+    M.clear(bufnr)
   end
   if prev_conflicts ~= has_conflict then
     api.nvim_exec_autocmds(
