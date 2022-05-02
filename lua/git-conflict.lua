@@ -21,13 +21,6 @@ local job = utils.job
 -- https://git-scm.com/book/en/v2/Git-Tools-Advanced-Merging
 
 -----------------------------------------------------------------------------//
--- TODO:
------------------------------------------------------------------------------//
--- - [x] Fix traversal order of prev and next conflict commands.
--- - [x] Clear buffer mappings once a conflict is resolved.
--- - [x] Support diff3 conflict style i.e. common ancestor
-
------------------------------------------------------------------------------//
 -- Types
 -----------------------------------------------------------------------------//
 
@@ -38,14 +31,26 @@ local job = utils.job
 --- @field incoming string
 --- @field ancestor string
 
+---@class RangeMark
+---@field label string
+---@field content string
+
+--- @class PositionMarks
+--- @field current RangeMark
+--- @field incoming RangeMark
+--- @field ancestor RangeMark
+
 --- @class Range
 --- @field range_start number
 --- @field range_end number
+--- @field content_start number
+--- @field content_end number
 
 --- @class ConflictPosition
 --- @field incoming Range
 --- @field middle Range
 --- @field current Range
+--- @field marks PositionMarks
 
 --- @class ConflictBufferCache
 --- @field lines table<number, boolean> map of conflicted line numbers
@@ -419,7 +424,7 @@ end
 
 ---Retrieves a conflict marker position by checking the visited buffers for a supported range
 ---@param bufnr number
----@return table?
+---@return ConflictPosition?
 local function get_current_position(bufnr)
   return find_position(bufnr, function(line, position)
     return position.current.range_start <= line and position.incoming.range_end >= line
@@ -472,6 +477,7 @@ local function fetch_conflicts()
   if not utils.is_valid_buf() then
     return
   end
+  ---@diagnostic disable-next-line: missing-parameter
   local buf_dir = fn.expand('%:p:h')
   for repo_path, time in pairs(visited_repos) do
     if vim.startswith(buf_dir, repo_path) and (time and os.difftime(os.time(), time) <= 60) then
@@ -630,11 +636,11 @@ local function quickfix_items_from_positions(item, items, visited_buf)
   end
 end
 
---- Convert the conflicts detected via get conflicted files into a list of
--- quickfix entries.
+--- Convert the conflicts detected via get conflicted files into a list of quickfix entries.
 ---@param callback fun(files: table<string, number[]>)
 function M.conflicts_to_qf_items(callback)
   local items = {}
+  ---@diagnostic disable-next-line: missing-parameter
   M.get_conflicted_files(fn.expand('%:p:h'), function(files)
     for filename, _ in pairs(files) do
       local item = {
