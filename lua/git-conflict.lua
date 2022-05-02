@@ -455,10 +455,8 @@ local function parse_buffer(bufnr, range_start, range_end)
     M.clear(bufnr)
   end
   if prev_conflicts ~= has_conflict then
-    api.nvim_exec_autocmds(
-      'User',
-      { pattern = has_conflict and 'GitConflictDetected' or 'GitConflictResolved' }
-    )
+    local pattern = has_conflict and 'GitConflictDetected' or 'GitConflictResolved'
+    api.nvim_exec_autocmds('User', { pattern = pattern })
   end
 end
 
