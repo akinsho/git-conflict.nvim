@@ -184,8 +184,8 @@ local function setup_buffer_mappings(bufnr)
   map('n', 'cb', '<Plug>(git-conflict-both)', opts)
   map('n', 'c0', '<Plug>(git-conflict-none)', opts)
   map('n', 'ct', '<Plug>(git-conflict-theirs)', opts)
-  map('n', '[x', '<Plug>(git-conflict-next-conflict)', opts)
-  map('n', ']x', '<Plug>(git-conflict-prev-conflict)', opts)
+  map('n', '[x', '<Plug>(git-conflict-prev-conflict)', opts)
+  map('n', ']x', '<Plug>(git-conflict-next-conflict)', opts)
   vim.b[bufnr].conflict_mappings_set = true
 end
 
