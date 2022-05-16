@@ -648,7 +648,12 @@ function M.conflicts_to_qf_items(callback)
         type = 'E',
         valid = 1,
       }
-      local visited_buf = visited_buffers[filename]
+      local visited_buf = nil
+
+      if next(visited_buffers[filename]) ~= nil then
+        visited_buf = visited_buffers[filename]
+      end
+
       if visited_buf then
         quickfix_items_from_positions(item, items, visited_buf)
       else
