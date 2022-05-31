@@ -1,7 +1,7 @@
 #!/bin/bash
 [ -d ./../conflict-test/ ] && rm -rf ./conflict-test/
 mkdir conflict-test
-cd conflict-test
+cd conflict-test || exit
 git init
 touch conflicted.lua
 git add conflicted.lua
