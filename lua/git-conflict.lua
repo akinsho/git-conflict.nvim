@@ -169,23 +169,29 @@ local function set_commands()
 end
 
 local function set_plug_mappings()
-  local opts = { silent = true }
-  map('n', '<Plug>(git-conflict-ours)', '<Cmd>GitConflictChooseOurs<CR>', opts)
-  map('n', '<Plug>(git-conflict-both)', '<Cmd>GitConflictChooseBoth<CR>', opts)
-  map('n', '<Plug>(git-conflict-none)', '<Cmd>GitConflictChooseNone<CR>', opts)
-  map('n', '<Plug>(git-conflict-theirs)', '<Cmd>GitConflictChooseTheirs<CR>', opts)
-  map('n', '<Plug>(git-conflict-next-conflict)', '<Cmd>GitConflictNextConflict<CR>', opts)
-  map('n', '<Plug>(git-conflict-prev-conflict)', '<Cmd>GitConflictPrevConflict<CR>', opts)
+  local function opts(desc)
+    return { silent = true, desc = 'Git Conflict: ' .. desc }
+  end
+
+  map('n', '<Plug>(git-conflict-ours)', '<Cmd>GitConflictChooseOurs<CR>', opts("Choose Ours"))
+  map('n', '<Plug>(git-conflict-both)', '<Cmd>GitConflictChooseBoth<CR>', opts("Choose Both"))
+  map('n', '<Plug>(git-conflict-none)', '<Cmd>GitConflictChooseNone<CR>', opts("Choose None"))
+  map('n', '<Plug>(git-conflict-theirs)', '<Cmd>GitConflictChooseTheirs<CR>', opts("Choose Theirs"))
+  map('n', '<Plug>(git-conflict-next-conflict)', '<Cmd>GitConflictNextConflict<CR>', opts("Next Conflict"))
+  map('n', '<Plug>(git-conflict-prev-conflict)', '<Cmd>GitConflictPrevConflict<CR>', opts("Previous Conflict"))
 end
 
 local function setup_buffer_mappings(bufnr)
-  local opts = { silent = true, buffer = bufnr }
-  map('n', 'co', '<Plug>(git-conflict-ours)', opts)
-  map('n', 'cb', '<Plug>(git-conflict-both)', opts)
-  map('n', 'c0', '<Plug>(git-conflict-none)', opts)
-  map('n', 'ct', '<Plug>(git-conflict-theirs)', opts)
-  map('n', '[x', '<Plug>(git-conflict-prev-conflict)', opts)
-  map('n', ']x', '<Plug>(git-conflict-next-conflict)', opts)
+  local function opts(desc)
+    return { silent = true, buffer = bufnr, desc = 'Git Conflict: ' .. desc }
+  end
+
+  map('n', 'co', '<Plug>(git-conflict-ours)', opts('Choose Ours'))
+  map('n', 'cb', '<Plug>(git-conflict-both)', opts('Choose Both'))
+  map('n', 'c0', '<Plug>(git-conflict-none)', opts('Choose None'))
+  map('n', 'ct', '<Plug>(git-conflict-theirs)', opts('Choose Theirs'))
+  map('n', '[x', '<Plug>(git-conflict-prev-conflict)', opts('Previous Conflict'))
+  map('n', ']x', '<Plug>(git-conflict-next-conflict)', opts('Next Conflict'))
   vim.b[bufnr].conflict_mappings_set = true
 end
 
@@ -445,7 +451,7 @@ end
 local function parse_buffer(bufnr, range_start, range_end)
   local lines = utils.get_buf_lines(range_start or 0, range_end or -1, bufnr)
   local prev_conflicts = visited_buffers[bufnr].positions ~= nil
-      and #visited_buffers[bufnr].positions > 0
+    and #visited_buffers[bufnr].positions > 0
   local has_conflict, positions = detect_conflicts(lines)
 
   update_visited_buffers(bufnr, positions)
@@ -620,8 +626,9 @@ local function quickfix_items_from_positions(item, items, visited_buf)
   end
   for _, pos in ipairs(visited_buf.positions) do
     for key, value in pairs(pos) do
-      if vim.tbl_contains({ name_map.ours, name_map.theirs, name_map.base }, key)
-          and not vim.tbl_isempty(value)
+      if
+        vim.tbl_contains({ name_map.ours, name_map.theirs, name_map.base }, key)
+        and not vim.tbl_isempty(value)
       then
         local lnum = value.range_start + 1
         local next_item = vim.deepcopy(item)
