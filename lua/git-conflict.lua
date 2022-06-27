@@ -131,101 +131,6 @@ end
 --- git using the diff command, and updated at intervals
 local visited_buffers = create_visited_buffers()
 
------------------------------------------------------------------------------//
--- Mappings
------------------------------------------------------------------------------//
-
-local function set_commands()
-  local command = api.nvim_create_user_command
-  command('GitConflictListQf', function()
-    M.conflicts_to_qf_items(function(items)
-      if #items > 0 then
-        fn.setqflist(items, 'r')
-        vim.cmd([[copen]])
-      end
-    end)
-  end, { nargs = 0 })
-  command('GitConflictChooseOurs', function()
-    M.choose('ours')
-  end, { nargs = 0 })
-  command('GitConflictChooseTheirs', function()
-    M.choose('theirs')
-  end, { nargs = 0 })
-  command('GitConflictChooseBoth', function()
-    M.choose('both')
-  end, { nargs = 0 })
-  command('GitConflictChooseBase', function()
-    M.choose('base')
-  end, { nargs = 0 })
-  command('GitConflictChooseNone', function()
-    M.choose('none')
-  end, { nargs = 0 })
-  command('GitConflictNextConflict', function()
-    M.find_next('ours')
-  end, { nargs = 0 })
-  command('GitConflictPrevConflict', function()
-    M.find_prev('ours')
-  end, { nargs = 0 })
-end
-
-local function set_plug_mappings()
-  local function opts(desc)
-    return { silent = true, desc = 'Git Conflict: ' .. desc }
-  end
-
-  map('n', '<Plug>(git-conflict-ours)', '<Cmd>GitConflictChooseOurs<CR>', opts("Choose Ours"))
-  map('n', '<Plug>(git-conflict-both)', '<Cmd>GitConflictChooseBoth<CR>', opts("Choose Both"))
-  map('n', '<Plug>(git-conflict-none)', '<Cmd>GitConflictChooseNone<CR>', opts("Choose None"))
-  map('n', '<Plug>(git-conflict-theirs)', '<Cmd>GitConflictChooseTheirs<CR>', opts("Choose Theirs"))
-  map('n', '<Plug>(git-conflict-next-conflict)', '<Cmd>GitConflictNextConflict<CR>', opts("Next Conflict"))
-  map('n', '<Plug>(git-conflict-prev-conflict)', '<Cmd>GitConflictPrevConflict<CR>', opts("Previous Conflict"))
-end
-
-local function setup_buffer_mappings(bufnr)
-  local function opts(desc)
-    return { silent = true, buffer = bufnr, desc = 'Git Conflict: ' .. desc }
-  end
-
-  map('n', 'co', '<Plug>(git-conflict-ours)', opts('Choose Ours'))
-  map('n', 'cb', '<Plug>(git-conflict-both)', opts('Choose Both'))
-  map('n', 'c0', '<Plug>(git-conflict-none)', opts('Choose None'))
-  map('n', 'ct', '<Plug>(git-conflict-theirs)', opts('Choose Theirs'))
-  map('n', '[x', '<Plug>(git-conflict-prev-conflict)', opts('Previous Conflict'))
-  map('n', ']x', '<Plug>(git-conflict-next-conflict)', opts('Next Conflict'))
-  vim.b[bufnr].conflict_mappings_set = true
-end
-
----@param key string
----@param mode "'n'|'v'|'o'|'nv'|'nvo'"?
----@return boolean
-local function is_mapped(key, mode)
-  return fn.hasmapto(key, mode or 'n') > 0
-end
-
-local function clear_buffer_mappings(bufnr)
-  if not bufnr or not vim.b[bufnr].conflict_mappings_set then
-    return
-  end
-  if is_mapped('co') then
-    api.nvim_buf_del_keymap(bufnr, 'n', 'co')
-  end
-  if is_mapped('cb') then
-    api.nvim_buf_del_keymap(bufnr, 'n', 'cb')
-  end
-  if is_mapped('c0') then
-    api.nvim_buf_del_keymap(bufnr, 'n', 'c0')
-  end
-  if is_mapped('ct') then
-    api.nvim_buf_del_keymap(bufnr, 'n', 'ct')
-  end
-  if is_mapped('[x') then
-    api.nvim_buf_del_keymap(bufnr, 'n', '[x')
-  end
-  if is_mapped(']x') then
-    api.nvim_buf_del_keymap(bufnr, 'n', ']x')
-  end
-  vim.b[bufnr].conflict_mappings_set = false
-end
 
 -----------------------------------------------------------------------------//
 
@@ -287,25 +192,6 @@ local function draw_section_label(bufnr, hl_group, label, lnum)
   })
 end
 
----Derive the colour of the section label highlights based on each sections highlights
----@param highlights ConflictHighlights
-local function set_highlights(highlights)
-  local current_color = utils.get_hl(highlights.current)
-  local incoming_color = utils.get_hl(highlights.incoming)
-  local ancestor_color = utils.get_hl(highlights.ancestor)
-  local current_bg = current_color.background or DEFAULT_CURRENT_BG_COLOR
-  local incoming_bg = incoming_color.background or DEFAULT_INCOMING_BG_COLOR
-  local ancestor_bg = ancestor_color.background or DEFAULT_ANCESTOR_BG_COLOR
-  local current_label_bg = color.shade_color(current_bg, 60)
-  local incoming_label_bg = color.shade_color(incoming_bg, 60)
-  local ancestor_label_bg = color.shade_color(ancestor_bg, 60)
-  api.nvim_set_hl(0, CURRENT_HL, { background = current_bg, bold = true })
-  api.nvim_set_hl(0, INCOMING_HL, { background = incoming_bg, bold = true })
-  api.nvim_set_hl(0, ANCESTOR_HL, { background = ancestor_bg, bold = true })
-  api.nvim_set_hl(0, CURRENT_LABEL_HL, { background = current_label_bg })
-  api.nvim_set_hl(0, INCOMING_LABEL_HL, { background = incoming_label_bg })
-  api.nvim_set_hl(0, ANCESTOR_LABEL_HL, { background = ancestor_label_bg })
-end
 
 ---Highlight each part of a git conflict i.e. the incoming changes vs the current/HEAD changes
 ---TODO: should extmarks be ephemeral? or is it less expensive to save them and only re-apply
@@ -514,6 +400,143 @@ local function process(bufnr, range_start, range_end)
     return
   end
   parse_buffer(bufnr, range_start, range_end)
+end
+
+-----------------------------------------------------------------------------//
+-- Commands
+-----------------------------------------------------------------------------//
+
+local function set_commands()
+  local command = api.nvim_create_user_command
+  command('GitConflictRefresh',function ()
+    fetch_conflicts()
+  end, { nargs = 0 })
+  command('GitConflictListQf', function()
+    M.conflicts_to_qf_items(function(items)
+      if #items > 0 then
+        fn.setqflist(items, 'r')
+        vim.cmd([[copen]])
+      end
+    end)
+  end, { nargs = 0 })
+  command('GitConflictChooseOurs', function()
+    M.choose('ours')
+  end, { nargs = 0 })
+  command('GitConflictChooseTheirs', function()
+    M.choose('theirs')
+  end, { nargs = 0 })
+  command('GitConflictChooseBoth', function()
+    M.choose('both')
+  end, { nargs = 0 })
+  command('GitConflictChooseBase', function()
+    M.choose('base')
+  end, { nargs = 0 })
+  command('GitConflictChooseNone', function()
+    M.choose('none')
+  end, { nargs = 0 })
+  command('GitConflictNextConflict', function()
+    M.find_next('ours')
+  end, { nargs = 0 })
+  command('GitConflictPrevConflict', function()
+    M.find_prev('ours')
+  end, { nargs = 0 })
+end
+
+-----------------------------------------------------------------------------//
+-- Mappings
+-----------------------------------------------------------------------------//
+
+local function set_plug_mappings()
+  local function opts(desc)
+    return { silent = true, desc = 'Git Conflict: ' .. desc }
+  end
+
+  map('n', '<Plug>(git-conflict-ours)', '<Cmd>GitConflictChooseOurs<CR>', opts('Choose Ours'))
+  map('n', '<Plug>(git-conflict-both)', '<Cmd>GitConflictChooseBoth<CR>', opts('Choose Both'))
+  map('n', '<Plug>(git-conflict-none)', '<Cmd>GitConflictChooseNone<CR>', opts('Choose None'))
+  map('n', '<Plug>(git-conflict-theirs)', '<Cmd>GitConflictChooseTheirs<CR>', opts('Choose Theirs'))
+  map(
+    'n',
+    '<Plug>(git-conflict-next-conflict)',
+    '<Cmd>GitConflictNextConflict<CR>',
+    opts('Next Conflict')
+  )
+  map(
+    'n',
+    '<Plug>(git-conflict-prev-conflict)',
+    '<Cmd>GitConflictPrevConflict<CR>',
+    opts('Previous Conflict')
+  )
+end
+
+local function setup_buffer_mappings(bufnr)
+  local function opts(desc)
+    return { silent = true, buffer = bufnr, desc = 'Git Conflict: ' .. desc }
+  end
+
+  map('n', 'co', '<Plug>(git-conflict-ours)', opts('Choose Ours'))
+  map('n', 'cb', '<Plug>(git-conflict-both)', opts('Choose Both'))
+  map('n', 'c0', '<Plug>(git-conflict-none)', opts('Choose None'))
+  map('n', 'ct', '<Plug>(git-conflict-theirs)', opts('Choose Theirs'))
+  map('n', '[x', '<Plug>(git-conflict-prev-conflict)', opts('Previous Conflict'))
+  map('n', ']x', '<Plug>(git-conflict-next-conflict)', opts('Next Conflict'))
+  vim.b[bufnr].conflict_mappings_set = true
+end
+
+---@param key string
+---@param mode "'n'|'v'|'o'|'nv'|'nvo'"?
+---@return boolean
+local function is_mapped(key, mode)
+  return fn.hasmapto(key, mode or 'n') > 0
+end
+
+local function clear_buffer_mappings(bufnr)
+  if not bufnr or not vim.b[bufnr].conflict_mappings_set then
+    return
+  end
+  if is_mapped('co') then
+    api.nvim_buf_del_keymap(bufnr, 'n', 'co')
+  end
+  if is_mapped('cb') then
+    api.nvim_buf_del_keymap(bufnr, 'n', 'cb')
+  end
+  if is_mapped('c0') then
+    api.nvim_buf_del_keymap(bufnr, 'n', 'c0')
+  end
+  if is_mapped('ct') then
+    api.nvim_buf_del_keymap(bufnr, 'n', 'ct')
+  end
+  if is_mapped('[x') then
+    api.nvim_buf_del_keymap(bufnr, 'n', '[x')
+  end
+  if is_mapped(']x') then
+    api.nvim_buf_del_keymap(bufnr, 'n', ']x')
+  end
+  vim.b[bufnr].conflict_mappings_set = false
+end
+
+-----------------------------------------------------------------------------//
+-- Highlights
+-----------------------------------------------------------------------------//
+
+---Derive the colour of the section label highlights based on each sections highlights
+---@param highlights ConflictHighlights
+local function set_highlights(highlights)
+  local current_color = utils.get_hl(highlights.current)
+  local incoming_color = utils.get_hl(highlights.incoming)
+  local ancestor_color = utils.get_hl(highlights.ancestor)
+  local current_bg = current_color.background or DEFAULT_CURRENT_BG_COLOR
+  local incoming_bg = incoming_color.background or DEFAULT_INCOMING_BG_COLOR
+  local ancestor_bg = ancestor_color.background or DEFAULT_ANCESTOR_BG_COLOR
+  local current_label_bg = color.shade_color(current_bg, 60)
+  local incoming_label_bg = color.shade_color(incoming_bg, 60)
+  local ancestor_label_bg = color.shade_color(ancestor_bg, 60)
+  api.nvim_set_hl(0, CURRENT_HL, { background = current_bg, bold = true })
+  api.nvim_set_hl(0, INCOMING_HL, { background = incoming_bg, bold = true })
+  api.nvim_set_hl(0, ANCESTOR_HL, { background = ancestor_bg, bold = true })
+  api.nvim_set_hl(0, CURRENT_LABEL_HL, { background = current_label_bg })
+  api.nvim_set_hl(0, INCOMING_LABEL_HL, { background = incoming_label_bg })
+  api.nvim_set_hl(0, ANCESTOR_LABEL_HL, { background = ancestor_label_bg })
 end
 
 function M.setup(user_config)
