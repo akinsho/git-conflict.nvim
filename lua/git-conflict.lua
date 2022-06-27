@@ -477,7 +477,7 @@ local visited_repos = {}
 --- buffer will not trigger a check. Ideally we could track the git directory's
 --- changes and trigger a check if there is a change. The issue with this is that
 --- not all conflicts result in a visible change in the git repo.
-function M.fetch_conflicts()
+local function fetch_conflicts()
   if not utils.is_valid_buf() then
     return
   end
@@ -535,7 +535,7 @@ function M.setup(user_config)
   api.nvim_create_augroup(AUGROUP_NAME, { clear = true })
   api.nvim_create_autocmd({ 'VimEnter', 'BufEnter', 'ShellCmdPost' }, {
     group = AUGROUP_NAME,
-    callback = M.fetch_conflicts,
+    callback = fetch_conflicts,
   })
 
   api.nvim_create_autocmd('User', {
