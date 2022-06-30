@@ -421,6 +421,17 @@ end
 ---@type table<string, userdata>
 local watchers = {}
 
+local on_throttled_change = utils.throttle(5000, function(watcher, callback, err, dir, status)
+  if err then
+    return vim.notify(fmt('Error watching %s(%s): %s', dir, err, status), 'error', {
+      title = 'Git Conflict',
+    })
+  end
+  fetch_conflicts()
+  watcher:stop()
+  callback(dir)
+end)
+
 local function watch_gitdir(dir)
   for _, w in pairs(watchers) do
     if w ~= watchers[dir] then
@@ -428,16 +439,9 @@ local function watch_gitdir(dir)
     end
   end
 
-  local rewatch = utils.throttle(5000, function(w, err, _, status)
-    if err then
-      return vim.notify(fmt('Error watching %s(%s): %s', dir, err, status), 'error', {
-        title = 'Git conflict',
-      })
-    end
-    fetch_conflicts()
-    w:stop()
-    watch_gitdir(dir)
-  end)
+  local function callback(d)
+    watch_gitdir(d)
+  end
 
   ---@type userdata
   watchers[dir] = watchers[dir] or vim.loop.new_fs_event()
@@ -446,7 +450,7 @@ local function watch_gitdir(dir)
     dir,
     { recursive = true },
     vim.schedule_wrap(function(...)
-      rewatch(w, ...)
+      on_throttled_change(w, callback, ...)
     end)
   )
 end
