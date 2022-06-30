@@ -433,18 +433,24 @@ local on_throttled_change = utils.throttle(5000, function(watcher, callback, err
   end
   fetch_conflicts()
   watcher:stop()
-  callback(dir)
+  callback()
 end)
 
-local function watch_gitdir(dir)
+--- Stop any watchers that aren't for the current project
+---@param dir string
+local function toggle_dir_watchers(dir)
   for _, w in pairs(watchers) do
     if w ~= watchers[dir] then
       w:stop()
     end
   end
+end
 
-  local function callback(d)
-    watch_gitdir(d)
+--- Create a FS watcher for the current git directory or restart an existing one
+---@param dir string
+local function watch_gitdir(dir)
+  local function callback()
+    watch_gitdir(dir)
   end
 
   ---@type userdata
@@ -632,6 +638,7 @@ function M.setup(user_config)
       if fn.isdirectory(gitdir) == 0 then
         return
       end
+      toggle_dir_watchers(gitdir)
       fetch_conflicts()
       throttled_watcher(gitdir)
     end,
