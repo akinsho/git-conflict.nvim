@@ -394,6 +394,8 @@ local function fetch_conflicts()
   end
   local seen = {}
   for _, b in ipairs(api.nvim_list_bufs()) do
+    -- FIXME: find a better way to get the project root for each buffer
+    -- e.g. vim.fs.find('.git', {upwards = true})[1]
     local dir = fn.fnamemodify(api.nvim_buf_get_name(b), ':p:h')
     if not seen[dir] then
       get_conflicted_files(dir, function(files, repo)
