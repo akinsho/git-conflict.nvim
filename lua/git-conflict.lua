@@ -385,8 +385,10 @@ end
 local watchers = {}
 
 local function watch_gitdir(dir)
-  if watchers[dir] then
-    return
+  for _, w in pairs(watchers) do
+    if w ~= watchers[dir] then
+      w:stop()
+    end
   end
   local rewatch = utils.throttle(5000, function(w)
     fetch_conflicts()
@@ -395,9 +397,9 @@ local function watch_gitdir(dir)
   end)
 
   ---@type userdata
-  local watcher = vim.loop.new_fs_event()
-  watchers[dir] = watcher
-  watcher:start(
+  watchers[dir] = watchers[dir] or vim.loop.new_fs_event()
+  local w = watchers[dir]
+  w:start(
     dir,
     { recursive = true },
     vim.schedule_wrap(function(err, d, status)
@@ -406,7 +408,7 @@ local function watch_gitdir(dir)
           title = 'Git conflict',
         })
       end
-      rewatch(watcher, d)
+      rewatch(w, d)
     end)
   )
 end
