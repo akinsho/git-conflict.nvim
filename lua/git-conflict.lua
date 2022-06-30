@@ -425,7 +425,7 @@ end
 
 local function set_commands()
   local command = api.nvim_create_user_command
-  command('GitConflictRefresh',function ()
+  command('GitConflictRefresh', function()
     fetch_conflicts()
   end, { nargs = 0 })
   command('GitConflictListQf', function()
