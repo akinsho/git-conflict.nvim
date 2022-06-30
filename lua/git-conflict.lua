@@ -422,6 +422,10 @@ end
 local watchers = {}
 
 local on_throttled_change = utils.throttle(5000, function(watcher, callback, err, dir, status)
+  -- FIXME: this should be a debug log only visible to me
+  vim.notify(fmt('Responding to FS change in %s', dir), 'info', {
+    title = 'Git Conflict',
+  })
   if err then
     return vim.notify(fmt('Error watching %s(%s): %s', dir, err, status), 'error', {
       title = 'Git Conflict',
