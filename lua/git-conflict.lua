@@ -357,51 +357,56 @@ local function fetch_conflicts()
   if not utils.is_valid_buf() then
     return
   end
-  ---@diagnostic disable-next-line: missing-parameter
-  M.get_conflicted_files(fn.expand('%:p:h'), function(files, repo)
-    for name, buf in pairs(visited_buffers) do
-      -- only clear buffers that are in the same repository as the conflicted files
-      -- as the result(files) might contain only files from a buffer in
-      -- a different repository in which case extmarks could be cleared for unrelated projects
-      -- FIXME: this will not work for nested repositories
-      if vim.startswith(name, repo) and not files[name] and buf.bufnr then
-        visited_buffers[name] = nil
-        M.clear(buf.bufnr)
-      end
+  local seen = {}
+  for _, b in ipairs(api.nvim_list_bufs()) do
+    local dir = fn.fnamemodify(api.nvim_buf_get_name(b), ':p:h')
+    if not seen[dir] then
+      M.get_conflicted_files(dir, function(files, repo)
+        seen[dir] = true
+        for name, buf in pairs(visited_buffers) do
+          -- only clear buffers that are in the same repository as the conflicted files
+          -- as the result (files) might contain only files from a buffer in
+          -- a different repository in which case extmarks could be cleared for unrelated projects
+          -- FIXME: this will not work for nested repositories
+          if vim.startswith(name, repo) and not files[name] and buf.bufnr then
+            visited_buffers[name] = nil
+            M.clear(buf.bufnr)
+          end
+        end
+        for path, _ in pairs(files) do
+          visited_buffers[path] = visited_buffers[path] or {}
+        end
+      end)
     end
-    for path, _ in pairs(files) do
-      visited_buffers[path] = visited_buffers[path] or {}
-    end
-  end)
+  end
 end
 
-local function watch_gitdir()
-  local gitdir = fn.getcwd() .. sep .. '.git'
-  if fn.isdirectory(gitdir) == 0 then
+---@type table<string, userdata>
+local watchers = {}
+
+local function watch_gitdir(dir)
+  if watchers[dir] then
     return
   end
-
-  fetch_conflicts()
-
-  local w = vim.loop.new_fs_event()
-
-  local function on_change(_, err, dir, status)
-    if err then
-      return vim.notify(fmt('Error watching %s(%s): %s', dir, err, status), 'error', {
-        title = 'Git conflict',
-      })
-    end
+  local rewatch = utils.throttle(5000, function(w)
     fetch_conflicts()
-    vim.cmd('checktime')
     w:stop()
-    utils.throttle(5000, watch_gitdir)
-  end
+    watch_gitdir(dir)
+  end)
 
-  w:start(
-    gitdir,
+  ---@type userdata
+  local watcher = vim.loop.new_fs_event()
+  watchers[dir] = watcher
+  watcher:start(
+    dir,
     { recursive = true },
-    vim.schedule_wrap(function(...)
-      on_change(w, ...)
+    vim.schedule_wrap(function(err, d, status)
+      if err then
+        return vim.notify(fmt('Error watching %s(%s): %s', dir, err, status), 'error', {
+          title = 'Git conflict',
+        })
+      end
+      rewatch(watcher, d)
     end)
   )
 end
@@ -570,9 +575,16 @@ function M.setup(user_config)
   set_plug_mappings()
 
   api.nvim_create_augroup(AUGROUP_NAME, { clear = true })
-  api.nvim_create_autocmd({ 'VimEnter', 'DirChanged' }, {
+  api.nvim_create_autocmd({ 'VimEnter', 'SessionLoadPost', 'DirChanged' }, {
     group = AUGROUP_NAME,
-    callback = watch_gitdir,
+    callback = function()
+      local gitdir = fn.getcwd() .. sep .. '.git'
+      if fn.isdirectory(gitdir) == 0 then
+        return
+      end
+      fetch_conflicts()
+      watch_gitdir(gitdir)
+    end,
   })
 
   api.nvim_create_autocmd('User', {
