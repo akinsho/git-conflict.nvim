@@ -427,7 +427,13 @@ local function watch_gitdir(dir)
       w:stop()
     end
   end
-  local rewatch = utils.throttle(5000, function(w)
+
+  local rewatch = utils.throttle(5000, function(w, err, _, status)
+    if err then
+      return vim.notify(fmt('Error watching %s(%s): %s', dir, err, status), 'error', {
+        title = 'Git conflict',
+      })
+    end
     fetch_conflicts()
     w:stop()
     watch_gitdir(dir)
@@ -439,16 +445,13 @@ local function watch_gitdir(dir)
   w:start(
     dir,
     { recursive = true },
-    vim.schedule_wrap(function(err, d, status)
-      if err then
-        return vim.notify(fmt('Error watching %s(%s): %s', dir, err, status), 'error', {
-          title = 'Git conflict',
-        })
-      end
-      rewatch(w, d)
+    vim.schedule_wrap(function(...)
+      rewatch(w, ...)
     end)
   )
 end
+
+local throttled_watcher = utils.throttle(1000, watch_gitdir)
 
 ---Process a buffer if the changed tick has changed
 ---@param bufnr number?
@@ -622,7 +625,7 @@ function M.setup(user_config)
         return
       end
       fetch_conflicts()
-      watch_gitdir(gitdir)
+      throttled_watcher(gitdir)
     end,
   })
 
