@@ -386,9 +386,6 @@ local function watch_gitdir()
   local w = vim.loop.new_fs_event()
 
   local function on_change(_, err, dir, status)
-    vim.schedule(function()
-      print(fmt('FS Event: %s', gitdir))
-    end)
     if err then
       return vim.notify(fmt('Error watching %s(%s): %s', dir, err, status), 'error', {
         title = 'Git conflict',
@@ -629,12 +626,12 @@ end
 
 --- Get a list of the conflicted files within the specified directory
 --- NOTE: only conflicted files within the git repository of the directory passed in are returned
+--- also we add a line prefix to the git command so that the full path is returned
+--- e.g. --line-prefix=`git rev-parse --show-toplevel`
 ---@reference: https://stackoverflow.com/a/10874862
 ---@param dir string?
 ---@param callback fun(files: table<string, number[]>, string)
 function M.get_conflicted_files(dir, callback)
-  -- we add a line prefix to the git command so that the full path is returned
-  -- e.g. --line-prefix=`git rev-parse --show-toplevel`
   get_git_root(dir, function(git_dir)
     local cmd = fmt(
       'git -C "%s" diff --line-prefix=%s --name-only --diff-filter=U',
@@ -645,9 +642,7 @@ function M.get_conflicted_files(dir, callback)
       local files = {}
       for _, filename in ipairs(data) do
         if #filename > 0 then
-          if not files[filename] then
-            files[filename] = {}
-          end
+          files[filename] = files[filename] or {}
         end
       end
       callback(files, git_dir)
