@@ -133,6 +133,41 @@ local visited_buffers = create_visited_buffers()
 
 -----------------------------------------------------------------------------//
 
+---Get full path to the repository of the directory passed in
+---@param dir any
+---@param callback fun(data: string[])
+local function get_git_root(dir, callback)
+  job(fmt('git -C "%s" rev-parse --show-toplevel', dir), function(data)
+    callback(data[1])
+  end)
+end
+
+--- Get a list of the conflicted files within the specified directory
+--- NOTE: only conflicted files within the git repository of the directory passed in are returned
+--- also we add a line prefix to the git command so that the full path is returned
+--- e.g. --line-prefix=`git rev-parse --show-toplevel`
+---@reference: https://stackoverflow.com/a/10874862
+---@param dir string?
+---@param callback fun(files: table<string, number[]>, string)
+local function get_conflicted_files(dir, callback)
+  get_git_root(dir, function(git_dir)
+    local cmd = fmt(
+      'git -C "%s" diff --line-prefix=%s --name-only --diff-filter=U',
+      git_dir,
+      git_dir .. sep
+    )
+    job(cmd, function(data)
+      local files = {}
+      for _, filename in ipairs(data) do
+        if #filename > 0 then
+          files[filename] = files[filename] or {}
+        end
+      end
+      callback(files, git_dir)
+    end)
+  end)
+end
+
 ---Add the positions to the buffer in our in memory buffer list
 ---positions are keyed by a list of range start and end for each mark
 ---@param buf number
@@ -361,7 +396,7 @@ local function fetch_conflicts()
   for _, b in ipairs(api.nvim_list_bufs()) do
     local dir = fn.fnamemodify(api.nvim_buf_get_name(b), ':p:h')
     if not seen[dir] then
-      M.get_conflicted_files(dir, function(files, repo)
+      get_conflicted_files(dir, function(files, repo)
         seen[dir] = true
         for name, buf in pairs(visited_buffers) do
           -- only clear buffers that are in the same repository as the conflicted files
@@ -629,41 +664,6 @@ function M.setup(user_config)
   })
 end
 
----Get full path to the repository of the directory passed in
----@param dir any
----@param callback fun(data: string[])
-local function get_git_root(dir, callback)
-  job(fmt('git -C "%s" rev-parse --show-toplevel', dir), function(data)
-    callback(data[1])
-  end)
-end
-
---- Get a list of the conflicted files within the specified directory
---- NOTE: only conflicted files within the git repository of the directory passed in are returned
---- also we add a line prefix to the git command so that the full path is returned
---- e.g. --line-prefix=`git rev-parse --show-toplevel`
----@reference: https://stackoverflow.com/a/10874862
----@param dir string?
----@param callback fun(files: table<string, number[]>, string)
-function M.get_conflicted_files(dir, callback)
-  get_git_root(dir, function(git_dir)
-    local cmd = fmt(
-      'git -C "%s" diff --line-prefix=%s --name-only --diff-filter=U',
-      git_dir,
-      git_dir .. sep
-    )
-    job(cmd, function(data)
-      local files = {}
-      for _, filename in ipairs(data) do
-        if #filename > 0 then
-          files[filename] = files[filename] or {}
-        end
-      end
-      callback(files, git_dir)
-    end)
-  end)
-end
-
 --- Add additional metadata to a quickfix entry if we have already visited the buffer and have that
 --- information
 ---@param item table<string, number|string>
@@ -695,7 +695,7 @@ end
 function M.conflicts_to_qf_items(callback)
   local items = {}
   ---@diagnostic disable-next-line: missing-parameter
-  M.get_conflicted_files(fn.expand('%:p:h'), function(files)
+  get_conflicted_files(fn.expand('%:p:h'), function(files)
     for filename, _ in pairs(files) do
       local item = {
         filename = filename,
