@@ -131,7 +131,6 @@ end
 --- git using the diff command, and updated at intervals
 local visited_buffers = create_visited_buffers()
 
-
 -----------------------------------------------------------------------------//
 
 ---Add the positions to the buffer in our in memory buffer list
@@ -191,7 +190,6 @@ local function draw_section_label(bufnr, hl_group, label, lnum)
     priority = PRIORITY,
   })
 end
-
 
 ---Highlight each part of a git conflict i.e. the incoming changes vs the current/HEAD changes
 ---TODO: should extmarks be ephemeral? or is it less expensive to save them and only re-apply
@@ -352,30 +350,15 @@ local function parse_buffer(bufnr, range_start, range_end)
   end
 end
 
---- @type table<string, number>
-local visited_repos = {}
-
 --- Fetch the conflicted files for the current buffer file's repo
 --- this is throttled by tracking when last we checked for conflicts
 --- and if it is over this interval we check again otherwise we return
---- TODO: this is a best effort but far from ideal, if a conflict happens
---- before the next interval within the same repo then entering the conflicted
---- buffer will not trigger a check. Ideally we could track the git directory's
---- changes and trigger a check if there is a change. The issue with this is that
---- not all conflicts result in a visible change in the git repo.
 local function fetch_conflicts()
   if not utils.is_valid_buf() then
     return
   end
   ---@diagnostic disable-next-line: missing-parameter
-  local buf_dir = fn.expand('%:p:h')
-  for repo_path, time in pairs(visited_repos) do
-    if vim.startswith(buf_dir, repo_path) and (time and os.difftime(os.time(), time) <= 60) then
-      return
-    end
-  end
-  M.get_conflicted_files(buf_dir, function(files, repo)
-    visited_repos[repo] = os.time()
+  M.get_conflicted_files(fn.expand('%:p:h'), function(files, repo)
     for name, buf in pairs(visited_buffers) do
       -- only clear buffers that are in the same repository as the conflicted files
       -- as the result(files) might contain only files from a buffer in
@@ -390,6 +373,40 @@ local function fetch_conflicts()
       visited_buffers[path] = visited_buffers[path] or {}
     end
   end)
+end
+
+local function watch_gitdir()
+  local gitdir = fn.getcwd() .. sep .. '.git'
+  if fn.isdirectory(gitdir) == 0 then
+    return
+  end
+
+  fetch_conflicts()
+
+  local w = vim.loop.new_fs_event()
+
+  local function on_change(_, err, dir, status)
+    vim.schedule(function()
+      print(fmt('FS Event: %s', gitdir))
+    end)
+    if err then
+      return vim.notify(fmt('Error watching %s(%s): %s', dir, err, status), 'error', {
+        title = 'Git conflict',
+      })
+    end
+    fetch_conflicts()
+    vim.cmd('checktime')
+    w:stop()
+    utils.throttle(5000, watch_gitdir)
+  end
+
+  w:start(
+    gitdir,
+    { recursive = true },
+    vim.schedule_wrap(function(...)
+      on_change(w, ...)
+    end)
+  )
 end
 
 ---Process a buffer if the changed tick has changed
@@ -556,9 +573,9 @@ function M.setup(user_config)
   set_plug_mappings()
 
   api.nvim_create_augroup(AUGROUP_NAME, { clear = true })
-  api.nvim_create_autocmd({ 'VimEnter', 'BufEnter', 'ShellCmdPost' }, {
+  api.nvim_create_autocmd({ 'VimEnter', 'DirChanged' }, {
     group = AUGROUP_NAME,
-    callback = fetch_conflicts,
+    callback = watch_gitdir,
   })
 
   api.nvim_create_autocmd('User', {
