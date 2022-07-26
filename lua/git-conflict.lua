@@ -29,10 +29,10 @@ local job = utils.job
 --- @class ConflictHighlights
 --- @field current string
 --- @field incoming string
---- @field ancestor string
+--- @field ancestor string?
 
 ---@class RangeMark
----@field label string
+---@field label integer
 ---@field content string
 
 --- @class PositionMarks
@@ -41,10 +41,10 @@ local job = utils.job
 --- @field ancestor RangeMark
 
 --- @class Range
---- @field range_start number
---- @field range_end number
---- @field content_start number
---- @field content_end number
+--- @field range_start integer
+--- @field range_end integer
+--- @field content_start integer
+--- @field content_end integer
 
 --- @class ConflictPosition
 --- @field incoming Range
@@ -53,10 +53,10 @@ local job = utils.job
 --- @field marks PositionMarks
 
 --- @class ConflictBufferCache
---- @field lines table<number, boolean> map of conflicted line numbers
+--- @field lines table<integer, boolean> map of conflicted line numbers
 --- @field positions ConflictPosition[]
---- @field tick number
---- @field bufnr number
+--- @field tick integer
+--- @field bufnr integer
 
 --- @class GitConflictConfig
 --- @field default_mappings boolean
@@ -148,14 +148,11 @@ end
 --- e.g. --line-prefix=`git rev-parse --show-toplevel`
 ---@reference: https://stackoverflow.com/a/10874862
 ---@param dir string?
----@param callback fun(files: table<string, number[]>, string)
+---@param callback fun(files: table<string, integer[]>, string)
 local function get_conflicted_files(dir, callback)
   get_git_root(dir, function(git_dir)
-    local cmd = fmt(
-      'git -C "%s" diff --line-prefix=%s --name-only --diff-filter=U',
-      git_dir,
-      git_dir .. sep
-    )
+    local cmd =
+      fmt('git -C "%s" diff --line-prefix=%s --name-only --diff-filter=U', git_dir, git_dir .. sep)
     job(cmd, function(data)
       local files = {}
       for _, filename in ipairs(data) do
@@ -170,7 +167,7 @@ end
 
 ---Add the positions to the buffer in our in memory buffer list
 ---positions are keyed by a list of range start and end for each mark
----@param buf number
+---@param buf integer
 ---@param positions ConflictPosition[]
 local function update_visited_buffers(buf, positions)
   if not buf or not api.nvim_buf_is_valid(buf) then
@@ -187,11 +184,11 @@ local function update_visited_buffers(buf, positions)
 end
 
 ---Set an extmark for each section of the git conflict
----@param bufnr number
+---@param bufnr integer
 ---@param hl string
----@param range_start number
----@param range_end number
----@return number extmark_id
+---@param range_start integer
+---@param range_end integer
+---@return integer? extmark_id
 local function hl_range(bufnr, hl, range_start, range_end)
   if not range_start or not range_end then
     return
@@ -211,11 +208,11 @@ end
 ---TODO: ideally this could be done by using virtual text at the EOL and highlighting the
 ---background but this doesn't work and currently this is done by filling the rest of the line with
 ---empty space and overlaying the line content
----@param bufnr number
+---@param bufnr integer
 ---@param hl_group string
 ---@param label string
----@param lnum number
----@return number extmark id
+---@param lnum integer
+---@return integer extmark id
 local function draw_section_label(bufnr, hl_group, label, lnum)
   local remaining_space = api.nvim_win_get_width(0) - api.nvim_strwidth(label)
   return api.nvim_buf_set_extmark(bufnr, NAMESPACE, lnum, 0, {
@@ -270,7 +267,6 @@ end
 ---@param lines string[]
 ---@return boolean
 ---@return ConflictPosition[]
----@return table<number, boolean>
 local function detect_conflicts(lines)
   local positions = {}
   local position, has_start, has_middle, has_ancestor = nil, false, false, false
@@ -318,8 +314,8 @@ local function detect_conflicts(lines)
 end
 
 ---Helper function to find a conflict position based on a comparator function
----@param bufnr number
----@param comparator number
+---@param bufnr integer
+---@param comparator fun(string, integer): boolean
 ---@param opts table?
 ---@return ConflictPosition?
 local function find_position(bufnr, comparator, opts)
@@ -348,7 +344,7 @@ local function find_position(bufnr, comparator, opts)
 end
 
 ---Retrieves a conflict marker position by checking the visited buffers for a supported range
----@param bufnr number
+---@param bufnr integer
 ---@return ConflictPosition?
 local function get_current_position(bufnr)
   return find_position(bufnr, function(line, position)
@@ -356,7 +352,7 @@ local function get_current_position(bufnr)
   end)
 end
 
----@param pos ConflictPosition
+---@param pos ConflictPosition?
 ---@param side ConflictSide
 local function set_cursor(pos, side)
   if pos then
@@ -366,7 +362,7 @@ local function set_cursor(pos, side)
 end
 
 ---Get the conflict marker positions for a buffer if any and update the buffers state
----@param bufnr number
+---@param bufnr integer
 local function parse_buffer(bufnr, range_start, range_end)
   local lines = utils.get_buf_lines(range_start or 0, range_end or -1, bufnr)
   local prev_conflicts = visited_buffers[bufnr].positions ~= nil
@@ -464,7 +460,7 @@ end
 local throttled_watcher = utils.throttle(1000, watch_gitdir)
 
 ---Process a buffer if the changed tick has changed
----@param bufnr number?
+---@param bufnr integer?
 local function process(bufnr, range_start, range_end)
   bufnr = bufnr or api.nvim_get_current_buf()
   if visited_buffers[bufnr] and visited_buffers[bufnr].tick == vim.b[bufnr].changedtick then
@@ -682,8 +678,8 @@ end
 
 --- Add additional metadata to a quickfix entry if we have already visited the buffer and have that
 --- information
----@param item table<string, number|string>
----@param items table<string, number|string>[]
+---@param item table<string, integer|string>
+---@param items table<string, integer|string>[]
 ---@param visited_buf ConflictBufferCache
 local function quickfix_items_from_positions(item, items, visited_buf)
   if vim.tbl_isempty(visited_buf.positions) then
@@ -707,7 +703,7 @@ local function quickfix_items_from_positions(item, items, visited_buf)
 end
 
 --- Convert the conflicts detected via get conflicted files into a list of quickfix entries.
----@param callback fun(files: table<string, number[]>)
+---@param callback fun(files: table<string, integer[]>)
 function M.conflicts_to_qf_items(callback)
   local items = {}
   ---@diagnostic disable-next-line: missing-parameter
@@ -736,7 +732,7 @@ function M.conflicts_to_qf_items(callback)
   end)
 end
 
----@param bufnr number?
+---@param bufnr integer?
 function M.clear(bufnr)
   if bufnr and not api.nvim_buf_is_valid(bufnr) then
     return
@@ -774,14 +770,10 @@ function M.choose(side)
     local data = position[name_map[side]]
     lines = utils.get_buf_lines(data.content_start, data.content_end + 1)
   elseif side == SIDES.both then
-    local first = utils.get_buf_lines(
-      position.current.content_start,
-      position.current.content_end + 1
-    )
-    local second = utils.get_buf_lines(
-      position.incoming.content_start,
-      position.incoming.content_end + 1
-    )
+    local first =
+      utils.get_buf_lines(position.current.content_start, position.current.content_end + 1)
+    local second =
+      utils.get_buf_lines(position.incoming.content_start, position.incoming.content_end + 1)
     lines = vim.list_extend(first, second)
   elseif side == SIDES.none then
     lines = {}
