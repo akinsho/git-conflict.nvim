@@ -636,6 +636,16 @@ function M.setup(user_config)
     end,
   })
 
+  api.nvim_create_autocmd('VimLeavePre', {
+    group = AUGROUP_NAME,
+    callback = function()
+      for key, watcher in pairs(watchers) do
+        watcher:stop()
+        watchers[key] = nil
+      end
+    end,
+  })
+
   api.nvim_create_autocmd('User', {
     group = AUGROUP_NAME,
     pattern = 'GitConflictDetected',
