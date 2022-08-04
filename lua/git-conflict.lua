@@ -417,7 +417,7 @@ end
 ---@type table<string, userdata>
 local watchers = {}
 
-local on_throttled_change = utils.throttle(5000, function(watcher, callback, err, dir, status)
+local on_throttled_change = utils.throttle(1000, function(watcher, callback, err, dir, status)
   if err then
     return vim.notify(fmt('Error watching %s(%s): %s', dir, err, status), 'error', {
       title = 'Git Conflict',
