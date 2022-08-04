@@ -29,10 +29,10 @@ local job = utils.job
 --- @class ConflictHighlights
 --- @field current string
 --- @field incoming string
---- @field ancestor string
+--- @field ancestor string?
 
 ---@class RangeMark
----@field label string
+---@field label integer
 ---@field content string
 
 --- @class PositionMarks
@@ -41,10 +41,10 @@ local job = utils.job
 --- @field ancestor RangeMark
 
 --- @class Range
---- @field range_start number
---- @field range_end number
---- @field content_start number
---- @field content_end number
+--- @field range_start integer
+--- @field range_end integer
+--- @field content_start integer
+--- @field content_end integer
 
 --- @class ConflictPosition
 --- @field incoming Range
@@ -53,10 +53,10 @@ local job = utils.job
 --- @field marks PositionMarks
 
 --- @class ConflictBufferCache
---- @field lines table<number, boolean> map of conflicted line numbers
+--- @field lines table<integer, boolean> map of conflicted line numbers
 --- @field positions ConflictPosition[]
---- @field tick number
---- @field bufnr number
+--- @field tick integer
+--- @field bufnr integer
 
 --- @class GitConflictConfig
 --- @field default_mappings boolean
@@ -120,9 +120,7 @@ local config = {
 local function create_visited_buffers()
   return setmetatable({}, {
     __index = function(t, k)
-      if type(k) == 'number' then
-        return t[api.nvim_buf_get_name(k)]
-      end
+      if type(k) == 'number' then return t[api.nvim_buf_get_name(k)] end
     end,
   })
 end
@@ -131,37 +129,58 @@ end
 --- git using the diff command, and updated at intervals
 local visited_buffers = create_visited_buffers()
 
-
 -----------------------------------------------------------------------------//
+
+---Get full path to the repository of the directory passed in
+---@param dir any
+---@param callback fun(data: string[])
+local function get_git_root(dir, callback)
+  job(fmt('git -C "%s" rev-parse --show-toplevel', dir), function(data) callback(data[1]) end)
+end
+
+--- Get a list of the conflicted files within the specified directory
+--- NOTE: only conflicted files within the git repository of the directory passed in are returned
+--- also we add a line prefix to the git command so that the full path is returned
+--- e.g. --line-prefix=`git rev-parse --show-toplevel`
+---@reference: https://stackoverflow.com/a/10874862
+---@param dir string?
+---@param callback fun(files: table<string, integer[]>, string)
+local function get_conflicted_files(dir, callback)
+  get_git_root(dir, function(git_dir)
+    local cmd =
+      fmt('git -C "%s" diff --line-prefix=%s --name-only --diff-filter=U', git_dir, git_dir .. sep)
+    job(cmd, function(data)
+      local files = {}
+      for _, filename in ipairs(data) do
+        if #filename > 0 then files[filename] = files[filename] or {} end
+      end
+      callback(files, git_dir)
+    end)
+  end)
+end
 
 ---Add the positions to the buffer in our in memory buffer list
 ---positions are keyed by a list of range start and end for each mark
----@param buf number
+---@param buf integer
 ---@param positions ConflictPosition[]
 local function update_visited_buffers(buf, positions)
-  if not buf or not api.nvim_buf_is_valid(buf) then
-    return
-  end
+  if not buf or not api.nvim_buf_is_valid(buf) then return end
   local name = api.nvim_buf_get_name(buf)
   -- If this buffer is not in the list
-  if not visited_buffers[name] then
-    return
-  end
+  if not visited_buffers[name] then return end
   visited_buffers[name].bufnr = buf
   visited_buffers[name].tick = vim.b[buf].changedtick
   visited_buffers[name].positions = positions
 end
 
 ---Set an extmark for each section of the git conflict
----@param bufnr number
+---@param bufnr integer
 ---@param hl string
----@param range_start number
----@param range_end number
----@return number extmark_id
+---@param range_start integer
+---@param range_end integer
+---@return integer? extmark_id
 local function hl_range(bufnr, hl, range_start, range_end)
-  if not range_start or not range_end then
-    return
-  end
+  if not range_start or not range_end then return end
   return api.nvim_buf_set_extmark(bufnr, NAMESPACE, range_start, 0, {
     hl_group = hl,
     hl_eol = true,
@@ -177,11 +196,11 @@ end
 ---TODO: ideally this could be done by using virtual text at the EOL and highlighting the
 ---background but this doesn't work and currently this is done by filling the rest of the line with
 ---empty space and overlaying the line content
----@param bufnr number
+---@param bufnr integer
 ---@param hl_group string
 ---@param label string
----@param lnum number
----@return number extmark id
+---@param lnum integer
+---@return integer extmark id
 local function draw_section_label(bufnr, hl_group, label, lnum)
   local remaining_space = api.nvim_win_get_width(0) - api.nvim_strwidth(label)
   return api.nvim_buf_set_extmark(bufnr, NAMESPACE, lnum, 0, {
@@ -191,7 +210,6 @@ local function draw_section_label(bufnr, hl_group, label, lnum)
     priority = PRIORITY,
   })
 end
-
 
 ---Highlight each part of a git conflict i.e. the incoming changes vs the current/HEAD changes
 ---TODO: should extmarks be ephemeral? or is it less expensive to save them and only re-apply
@@ -237,7 +255,6 @@ end
 ---@param lines string[]
 ---@return boolean
 ---@return ConflictPosition[]
----@return table<number, boolean>
 local function detect_conflicts(lines)
   local positions = {}
   local position, has_start, has_middle, has_ancestor = nil, false, false, false
@@ -285,45 +302,42 @@ local function detect_conflicts(lines)
 end
 
 ---Helper function to find a conflict position based on a comparator function
----@param bufnr number
----@param comparator number
+---@param bufnr integer
+---@param comparator fun(string, integer): boolean
 ---@param opts table?
 ---@return ConflictPosition?
 local function find_position(bufnr, comparator, opts)
   local match = visited_buffers[bufnr]
-  if not match then
-    return
-  end
+  if not match then return end
   local line = utils.get_cursor_pos()
 
   if opts and opts.reverse then
     for i = #match.positions, 1, -1 do
       local position = match.positions[i]
-      if comparator(line, position) then
-        return position
-      end
+      if comparator(line, position) then return position end
     end
     return nil
   end
 
   for _, position in ipairs(match.positions) do
-    if comparator(line, position) then
-      return position
-    end
+    if comparator(line, position) then return position end
   end
   return nil
 end
 
 ---Retrieves a conflict marker position by checking the visited buffers for a supported range
----@param bufnr number
+---@param bufnr integer
 ---@return ConflictPosition?
 local function get_current_position(bufnr)
-  return find_position(bufnr, function(line, position)
-    return position.current.range_start <= line and position.incoming.range_end >= line
-  end)
+  return find_position(
+    bufnr,
+    function(line, position)
+      return position.current.range_start <= line and position.incoming.range_end >= line
+    end
+  )
 end
 
----@param pos ConflictPosition
+---@param pos ConflictPosition?
 ---@param side ConflictSide
 local function set_cursor(pos, side)
   if pos then
@@ -333,7 +347,7 @@ local function set_cursor(pos, side)
 end
 
 ---Get the conflict marker positions for a buffer if any and update the buffers state
----@param bufnr number
+---@param bufnr integer
 local function parse_buffer(bufnr, range_start, range_end)
   local lines = utils.get_buf_lines(range_start or 0, range_end or -1, bufnr)
   local prev_conflicts = visited_buffers[bufnr].positions ~= nil
@@ -352,48 +366,78 @@ local function parse_buffer(bufnr, range_start, range_end)
   end
 end
 
---- @type table<string, number>
-local visited_repos = {}
-
 --- Fetch the conflicted files for the current buffer file's repo
 --- this is throttled by tracking when last we checked for conflicts
 --- and if it is over this interval we check again otherwise we return
---- TODO: this is a best effort but far from ideal, if a conflict happens
---- before the next interval within the same repo then entering the conflicted
---- buffer will not trigger a check. Ideally we could track the git directory's
---- changes and trigger a check if there is a change. The issue with this is that
---- not all conflicts result in a visible change in the git repo.
 local function fetch_conflicts()
-  if not utils.is_valid_buf() then
-    return
-  end
-  ---@diagnostic disable-next-line: missing-parameter
-  local buf_dir = fn.expand('%:p:h')
-  for repo_path, time in pairs(visited_repos) do
-    if vim.startswith(buf_dir, repo_path) and (time and os.difftime(os.time(), time) <= 60) then
-      return
+  if not utils.is_valid_buf() then return end
+  local seen = {}
+  for _, b in ipairs(api.nvim_list_bufs()) do
+    -- FIXME: find a better way to get the project root for each buffer
+    -- e.g. vim.fs.find('.git', {upwards = true})[1]
+    local dir = fn.fnamemodify(api.nvim_buf_get_name(b), ':p:h')
+    if not seen[dir] then
+      get_conflicted_files(dir, function(files, repo)
+        seen[dir] = true
+        for name, buf in pairs(visited_buffers) do
+          -- only clear buffers that are in the same repository as the conflicted files
+          -- as the result (files) might contain only files from a buffer in
+          -- a different repository in which case extmarks could be cleared for unrelated projects
+          -- FIXME: this will not work for nested repositories
+          if vim.startswith(name, repo) and not files[name] and buf.bufnr then
+            visited_buffers[name] = nil
+            M.clear(buf.bufnr)
+          end
+        end
+        for path, _ in pairs(files) do
+          visited_buffers[path] = visited_buffers[path] or {}
+        end
+      end)
     end
   end
-  M.get_conflicted_files(buf_dir, function(files, repo)
-    visited_repos[repo] = os.time()
-    for name, buf in pairs(visited_buffers) do
-      -- only clear buffers that are in the same repository as the conflicted files
-      -- as the result(files) might contain only files from a buffer in
-      -- a different repository in which case extmarks could be cleared for unrelated projects
-      -- FIXME: this will not work for nested repositories
-      if vim.startswith(name, repo) and not files[name] and buf.bufnr then
-        visited_buffers[name] = nil
-        M.clear(buf.bufnr)
-      end
-    end
-    for path, _ in pairs(files) do
-      visited_buffers[path] = visited_buffers[path] or {}
-    end
-  end)
 end
 
+---@type table<string, userdata>
+local watchers = {}
+
+local on_throttled_change = utils.throttle(1000, function(watcher, callback, err, dir, status)
+  if err then
+    return vim.notify(fmt('Error watching %s(%s): %s', dir, err, status), 'error', {
+      title = 'Git Conflict',
+    })
+  end
+  fetch_conflicts()
+  watcher:stop()
+  callback()
+end)
+
+--- Stop any watchers that aren't for the current project
+---@param dir string
+local function toggle_dir_watchers(dir)
+  for _, w in pairs(watchers) do
+    if w ~= watchers[dir] then w:stop() end
+  end
+end
+
+--- Create a FS watcher for the current git directory or restart an existing one
+---@param dir string
+local function watch_gitdir(dir)
+  local function callback() watch_gitdir(dir) end
+
+  ---@type userdata
+  watchers[dir] = watchers[dir] or vim.loop.new_fs_event()
+  local w = watchers[dir]
+  w:start(
+    dir,
+    { recursive = true },
+    vim.schedule_wrap(function(...) on_throttled_change(w, callback, ...) end)
+  )
+end
+
+local throttled_watcher = utils.throttle(1000, watch_gitdir)
+
 ---Process a buffer if the changed tick has changed
----@param bufnr number?
+---@param bufnr integer?
 local function process(bufnr, range_start, range_end)
   bufnr = bufnr or api.nvim_get_current_buf()
   if visited_buffers[bufnr] and visited_buffers[bufnr].tick == vim.b[bufnr].changedtick then
@@ -408,9 +452,7 @@ end
 
 local function set_commands()
   local command = api.nvim_create_user_command
-  command('GitConflictRefresh',function ()
-    fetch_conflicts()
-  end, { nargs = 0 })
+  command('GitConflictRefresh', function() fetch_conflicts() end, { nargs = 0 })
   command('GitConflictListQf', function()
     M.conflicts_to_qf_items(function(items)
       if #items > 0 then
@@ -419,27 +461,13 @@ local function set_commands()
       end
     end)
   end, { nargs = 0 })
-  command('GitConflictChooseOurs', function()
-    M.choose('ours')
-  end, { nargs = 0 })
-  command('GitConflictChooseTheirs', function()
-    M.choose('theirs')
-  end, { nargs = 0 })
-  command('GitConflictChooseBoth', function()
-    M.choose('both')
-  end, { nargs = 0 })
-  command('GitConflictChooseBase', function()
-    M.choose('base')
-  end, { nargs = 0 })
-  command('GitConflictChooseNone', function()
-    M.choose('none')
-  end, { nargs = 0 })
-  command('GitConflictNextConflict', function()
-    M.find_next('ours')
-  end, { nargs = 0 })
-  command('GitConflictPrevConflict', function()
-    M.find_prev('ours')
-  end, { nargs = 0 })
+  command('GitConflictChooseOurs', function() M.choose('ours') end, { nargs = 0 })
+  command('GitConflictChooseTheirs', function() M.choose('theirs') end, { nargs = 0 })
+  command('GitConflictChooseBoth', function() M.choose('both') end, { nargs = 0 })
+  command('GitConflictChooseBase', function() M.choose('base') end, { nargs = 0 })
+  command('GitConflictChooseNone', function() M.choose('none') end, { nargs = 0 })
+  command('GitConflictNextConflict', function() M.find_next('ours') end, { nargs = 0 })
+  command('GitConflictPrevConflict', function() M.find_prev('ours') end, { nargs = 0 })
 end
 
 -----------------------------------------------------------------------------//
@@ -447,9 +475,7 @@ end
 -----------------------------------------------------------------------------//
 
 local function set_plug_mappings()
-  local function opts(desc)
-    return { silent = true, desc = 'Git Conflict: ' .. desc }
-  end
+  local function opts(desc) return { silent = true, desc = 'Git Conflict: ' .. desc } end
 
   map('n', '<Plug>(git-conflict-ours)', '<Cmd>GitConflictChooseOurs<CR>', opts('Choose Ours'))
   map('n', '<Plug>(git-conflict-both)', '<Cmd>GitConflictChooseBoth<CR>', opts('Choose Both'))
@@ -486,32 +512,16 @@ end
 ---@param key string
 ---@param mode "'n'|'v'|'o'|'nv'|'nvo'"?
 ---@return boolean
-local function is_mapped(key, mode)
-  return fn.hasmapto(key, mode or 'n') > 0
-end
+local function is_mapped(key, mode) return fn.hasmapto(key, mode or 'n') > 0 end
 
 local function clear_buffer_mappings(bufnr)
-  if not bufnr or not vim.b[bufnr].conflict_mappings_set then
-    return
-  end
-  if is_mapped('co') then
-    api.nvim_buf_del_keymap(bufnr, 'n', 'co')
-  end
-  if is_mapped('cb') then
-    api.nvim_buf_del_keymap(bufnr, 'n', 'cb')
-  end
-  if is_mapped('c0') then
-    api.nvim_buf_del_keymap(bufnr, 'n', 'c0')
-  end
-  if is_mapped('ct') then
-    api.nvim_buf_del_keymap(bufnr, 'n', 'ct')
-  end
-  if is_mapped('[x') then
-    api.nvim_buf_del_keymap(bufnr, 'n', '[x')
-  end
-  if is_mapped(']x') then
-    api.nvim_buf_del_keymap(bufnr, 'n', ']x')
-  end
+  if not bufnr or not vim.b[bufnr].conflict_mappings_set then return end
+  if is_mapped('co') then api.nvim_buf_del_keymap(bufnr, 'n', 'co') end
+  if is_mapped('cb') then api.nvim_buf_del_keymap(bufnr, 'n', 'cb') end
+  if is_mapped('c0') then api.nvim_buf_del_keymap(bufnr, 'n', 'c0') end
+  if is_mapped('ct') then api.nvim_buf_del_keymap(bufnr, 'n', 'ct') end
+  if is_mapped('[x') then api.nvim_buf_del_keymap(bufnr, 'n', '[x') end
+  if is_mapped(']x') then api.nvim_buf_del_keymap(bufnr, 'n', ']x') end
   vim.b[bufnr].conflict_mappings_set = false
 end
 
@@ -541,13 +551,15 @@ end
 
 function M.setup(user_config)
   if fn.executable('git') <= 0 then
-    return vim.schedule(function()
-      vim.notify_once(
-        'You need to have git installed in order to use this plugin',
-        'error',
-        { title = 'Git conflict' }
-      )
-    end)
+    return vim.schedule(
+      function()
+        vim.notify_once(
+          'You need to have git installed in order to use this plugin',
+          'error',
+          { title = 'Git conflict' }
+        )
+      end
+    )
   end
 
   config = vim.tbl_deep_extend('force', config, user_config or {})
@@ -556,9 +568,25 @@ function M.setup(user_config)
   set_plug_mappings()
 
   api.nvim_create_augroup(AUGROUP_NAME, { clear = true })
-  api.nvim_create_autocmd({ 'VimEnter', 'BufEnter', 'ShellCmdPost' }, {
+  api.nvim_create_autocmd({ 'VimEnter', 'SessionLoadPost', 'DirChanged' }, {
     group = AUGROUP_NAME,
-    callback = fetch_conflicts,
+    callback = function()
+      local gitdir = fn.getcwd() .. sep .. '.git'
+      if fn.isdirectory(gitdir) == 0 then return end
+      toggle_dir_watchers(gitdir)
+      fetch_conflicts()
+      throttled_watcher(gitdir)
+    end,
+  })
+
+  api.nvim_create_autocmd('VimLeavePre', {
+    group = AUGROUP_NAME,
+    callback = function()
+      for key, watcher in pairs(watchers) do
+        watcher:stop()
+        watchers[key] = nil
+      end
+    end,
   })
 
   api.nvim_create_autocmd('User', {
@@ -566,12 +594,8 @@ function M.setup(user_config)
     pattern = 'GitConflictDetected',
     callback = function()
       local bufnr = api.nvim_get_current_buf()
-      if config.disable_diagnostics then
-        vim.diagnostic.disable(bufnr)
-      end
-      if config.default_mappings then
-        setup_buffer_mappings(bufnr)
-      end
+      if config.disable_diagnostics then vim.diagnostic.disable(bufnr) end
+      if config.default_mappings then setup_buffer_mappings(bufnr) end
     end,
   })
 
@@ -580,73 +604,26 @@ function M.setup(user_config)
     pattern = 'GitConflictResolved',
     callback = function()
       local bufnr = api.nvim_get_current_buf()
-      if config.disable_diagnostics then
-        vim.diagnostic.enable(bufnr)
-      end
-      if config.default_mappings then
-        clear_buffer_mappings(bufnr)
-      end
+      if config.disable_diagnostics then vim.diagnostic.enable(bufnr) end
+      if config.default_mappings then clear_buffer_mappings(bufnr) end
     end,
   })
 
   api.nvim_set_decoration_provider(NAMESPACE, {
-    on_buf = function(_, bufnr, _)
-      return utils.is_valid_buf(bufnr)
-    end,
+    on_buf = function(_, bufnr, _) return utils.is_valid_buf(bufnr) end,
     on_win = function(_, _, bufnr, _, _)
-      if visited_buffers[bufnr] then
-        process(bufnr)
-      end
+      if visited_buffers[bufnr] then process(bufnr) end
     end,
   })
 end
 
----Get full path to the repository of the directory passed in
----@param dir any
----@param callback fun(data: string[])
-local function get_git_root(dir, callback)
-  job(fmt('git -C "%s" rev-parse --show-toplevel', dir), function(data)
-    callback(data[1])
-  end)
-end
-
---- Get a list of the conflicted files within the specified directory
---- NOTE: only conflicted files within the git repository of the directory passed in are returned
----@reference: https://stackoverflow.com/a/10874862
----@param dir string?
----@param callback fun(files: table<string, number[]>, string)
-function M.get_conflicted_files(dir, callback)
-  -- we add a line prefix to the git command so that the full path is returned
-  -- e.g. --line-prefix=`git rev-parse --show-toplevel`
-  get_git_root(dir, function(git_dir)
-    local cmd = fmt(
-      'git -C "%s" diff --line-prefix=%s --name-only --diff-filter=U',
-      git_dir,
-      git_dir .. sep
-    )
-    job(cmd, function(data)
-      local files = {}
-      for _, filename in ipairs(data) do
-        if #filename > 0 then
-          if not files[filename] then
-            files[filename] = {}
-          end
-        end
-      end
-      callback(files, git_dir)
-    end)
-  end)
-end
-
 --- Add additional metadata to a quickfix entry if we have already visited the buffer and have that
 --- information
----@param item table<string, number|string>
----@param items table<string, number|string>[]
+---@param item table<string, integer|string>
+---@param items table<string, integer|string>[]
 ---@param visited_buf ConflictBufferCache
 local function quickfix_items_from_positions(item, items, visited_buf)
-  if vim.tbl_isempty(visited_buf.positions) then
-    return
-  end
+  if vim.tbl_isempty(visited_buf.positions) then return end
   for _, pos in ipairs(visited_buf.positions) do
     for key, value in pairs(pos) do
       if
@@ -665,11 +642,11 @@ local function quickfix_items_from_positions(item, items, visited_buf)
 end
 
 --- Convert the conflicts detected via get conflicted files into a list of quickfix entries.
----@param callback fun(files: table<string, number[]>)
+---@param callback fun(files: table<string, integer[]>)
 function M.conflicts_to_qf_items(callback)
   local items = {}
   ---@diagnostic disable-next-line: missing-parameter
-  M.get_conflicted_files(fn.expand('%:p:h'), function(files)
+  get_conflicted_files(fn.expand('%:p:h'), function(files)
     for filename, _ in pairs(files) do
       local item = {
         filename = filename,
@@ -680,9 +657,7 @@ function M.conflicts_to_qf_items(callback)
       }
       local visited_buf = nil
 
-      if next(visited_buffers[filename]) ~= nil then
-        visited_buf = visited_buffers[filename]
-      end
+      if next(visited_buffers[filename]) ~= nil then visited_buf = visited_buffers[filename] end
 
       if visited_buf then
         quickfix_items_from_positions(item, items, visited_buf)
@@ -694,28 +669,33 @@ function M.conflicts_to_qf_items(callback)
   end)
 end
 
----@param bufnr number?
+---@param bufnr integer?
 function M.clear(bufnr)
-  if bufnr and not api.nvim_buf_is_valid(bufnr) then
-    return
-  end
+  if bufnr and not api.nvim_buf_is_valid(bufnr) then return end
   bufnr = bufnr or 0
   api.nvim_buf_clear_namespace(bufnr, NAMESPACE, 0, -1)
 end
 
 ---@param side ConflictSide
 function M.find_next(side)
-  local pos = find_position(0, function(line, position)
-    return position.current.range_start >= line and position.incoming.range_end >= line
-  end)
+  local pos = find_position(
+    0,
+    function(line, position)
+      return position.current.range_start >= line and position.incoming.range_end >= line
+    end
+  )
   set_cursor(pos, side)
 end
 
 ---@param side ConflictSide
 function M.find_prev(side)
-  local pos = find_position(0, function(line, position)
-    return position.current.range_start <= line and position.incoming.range_end <= line
-  end, { reverse = true })
+  local pos = find_position(
+    0,
+    function(line, position)
+      return position.current.range_start <= line and position.incoming.range_end <= line
+    end,
+    { reverse = true }
+  )
   set_cursor(pos, side)
 end
 
@@ -724,22 +704,16 @@ end
 function M.choose(side)
   local bufnr = api.nvim_get_current_buf()
   local position = get_current_position(bufnr)
-  if not position then
-    return
-  end
+  if not position then return end
   local lines = {}
   if vim.tbl_contains({ SIDES.ours, SIDES.theirs, SIDES.base }, side) then
     local data = position[name_map[side]]
     lines = utils.get_buf_lines(data.content_start, data.content_end + 1)
   elseif side == SIDES.both then
-    local first = utils.get_buf_lines(
-      position.current.content_start,
-      position.current.content_end + 1
-    )
-    local second = utils.get_buf_lines(
-      position.incoming.content_start,
-      position.incoming.content_end + 1
-    )
+    local first =
+      utils.get_buf_lines(position.current.content_start, position.current.content_end + 1)
+    local second =
+      utils.get_buf_lines(position.incoming.content_start, position.incoming.content_end + 1)
     lines = vim.list_extend(first, second)
   elseif side == SIDES.none then
     lines = {}
