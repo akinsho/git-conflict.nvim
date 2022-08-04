@@ -18,10 +18,13 @@ encounter some bugs during usage. The current commands and mappings are also sub
 ## Installation
 
 ```lua
-use {'akinsho/git-conflict.nvim', config = function()
+use {'akinsho/git-conflict.nvim', tag = "*", config = function()
   require('git-conflict').setup()
 end}
 ```
+
+I recommend using the tag field of you package manager as so your version of this plugin is only updated when a new tag is pushed as `main` itself might be unstable.
+
 
 ## Configuration
 
