@@ -62,6 +62,7 @@ local job = utils.job
 --- @field default_mappings boolean
 --- @field disable_diagnostics boolean
 --- @field highlights ConflictHighlights
+--- @field debug boolean
 
 -----------------------------------------------------------------------------//
 -- Constants
@@ -107,6 +108,7 @@ local DEFAULT_ANCESTOR_BG_COLOR = 6824314 -- #68217A
 
 --- @type GitConflictConfig
 local config = {
+  debug = false,
   default_mappings = true,
   disable_diagnostics = false,
   highlights = {
@@ -407,6 +409,7 @@ local watchers = {}
 
 local on_throttled_change = utils.throttle(1000, function(dir, err, change)
   if err then return utils.notify(fmt('Error watching %s(%s): %s', dir, err, change), 'error') end
+  if config.debug then utils.notify(fmt('Watching %s - change: %s ', dir, change), 'info') end
   fetch_conflicts()
 end)
 
@@ -729,5 +732,7 @@ function M.choose(side)
   end
   parse_buffer(bufnr)
 end
+
+function M.debug_watchers() vim.pretty_print({ watchers = watchers }) end
 
 return M
