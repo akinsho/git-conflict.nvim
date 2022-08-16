@@ -405,11 +405,8 @@ end
 ---@type table<string, userdata>
 local watchers = {}
 
-local on_throttled_change = utils.throttle(1000, function(dir, err, _, status)
-  if err then
-    local msg = fmt('Error watching %s(%s): %s', dir, err, status)
-    return vim.notify(msg, vim.log.levels.ERROR, { title = 'Git Conflict' })
-  end
+local on_throttled_change = utils.throttle(1000, function(dir, err, change)
+  if err then return utils.notify(fmt('Error watching %s(%s): %s', dir, err, change), 'error') end
   fetch_conflicts()
 end)
 
@@ -558,13 +555,7 @@ end
 function M.setup(user_config)
   if fn.executable('git') <= 0 then
     return vim.schedule(
-      function()
-        vim.notify_once(
-          'You need to have git installed in order to use this plugin',
-          'error',
-          { title = 'Git conflict' }
-        )
-      end
+      function() utils.notify('You need to have git installed in order to use this plugin', 'error', true) end
     )
   end
 
