@@ -153,16 +153,13 @@ end
 ---@param dir string?
 ---@param callback fun(files: table<string, integer[]>, string)
 local function get_conflicted_files(dir, callback)
-  get_git_root(dir, function(git_dir)
-    local cmd =
-      fmt('git -C "%s" diff --line-prefix=%s --name-only --diff-filter=U', git_dir, git_dir .. sep)
-    job(cmd, function(data)
-      local files = {}
-      for _, filename in ipairs(data) do
-        if #filename > 0 then files[filename] = files[filename] or {} end
-      end
-      callback(files, git_dir)
-    end)
+  local cmd = fmt('git -C "%s" diff --line-prefix=%s%s --name-only --diff-filter=U', dir, dir, sep)
+  job(cmd, function(data)
+    local files = {}
+    for _, filename in ipairs(data) do
+      if #filename > 0 then files[filename] = files[filename] or {} end
+    end
+    callback(files, dir)
   end)
 end
 
@@ -375,33 +372,26 @@ end
 
 --- Fetch the conflicted files for the current buffer file's repo
 --- this is throttled by tracking when last we checked for conflicts
---- and if it is over this interval we check again otherwise we return
-local function fetch_conflicts()
-  if not utils.is_valid_buf() then return end
-  local seen = {}
-  for _, b in ipairs(api.nvim_list_bufs()) do
-    -- FIXME: find a better way to get the project root for each buffer
-    -- e.g. vim.fs.find('.git', {upwards = true})[1]
-    local dir = fn.fnamemodify(api.nvim_buf_get_name(b), ':p:h')
-    if not seen[dir] then
-      get_conflicted_files(dir, function(files, repo)
-        seen[dir] = true
-        for name, buf in pairs(visited_buffers) do
-          -- only clear buffers that are in the same repository as the conflicted files
-          -- as the result (files) might contain only files from a buffer in
-          -- a different repository in which case extmarks could be cleared for unrelated projects
-          -- FIXME: this will not work for nested repositories
-          if vim.startswith(name, repo) and not files[name] and buf.bufnr then
-            visited_buffers[name] = nil
-            M.clear(buf.bufnr)
-          end
+--- and if it is over this interval we check again otherwise we return.
+--- When clearing only clear buffers that are in the same repository as the conflicted files
+--- as the result (files) might contain only files from a buffer in
+--- a different repository in which case extmarks could be cleared for unrelated projects
+local function fetch_conflicts(buf)
+  buf = buf or api.nvim_get_current_buf()
+  get_git_root(fn.fnamemodify(api.nvim_buf_get_name(buf), ':h'), function(git_root)
+    get_conflicted_files(git_root, function(files, repo)
+      for name, b in pairs(visited_buffers) do
+        -- FIXME: this will not work for nested repositories
+        if vim.startswith(name, repo) and not files[name] and b.bufnr then
+          visited_buffers[name] = nil
+          M.clear(b.bufnr)
         end
-        for path, _ in pairs(files) do
-          visited_buffers[path] = visited_buffers[path] or {}
-        end
-      end)
-    end
-  end
+      end
+      for path, _ in pairs(files) do
+        visited_buffers[path] = visited_buffers[path] or {}
+      end
+    end)
+  end)
 end
 
 ---@type table<string, userdata>

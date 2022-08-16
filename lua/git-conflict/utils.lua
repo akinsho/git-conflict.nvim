@@ -18,6 +18,9 @@ function M.notify(msg, level, once)
   vim.notify(msg, lvl, opts)
 end
 
+--- Start an async job
+---@param cmd string
+---@param callback fun(data: string[]): nil
 function M.job(cmd, callback)
   fn.jobstart(cmd, {
     stdout_buffered = true,
