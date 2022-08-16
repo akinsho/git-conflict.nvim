@@ -129,11 +129,16 @@ end
 --- git using the diff command, and updated at intervals
 local visited_buffers = create_visited_buffers()
 
+local state = {
+  ---@type string?
+  current_watcher_dir = nil,
+}
+
 -----------------------------------------------------------------------------//
 
 ---Get full path to the repository of the directory passed in
 ---@param dir any
----@param callback fun(data: string[])
+---@param callback fun(data: string)
 local function get_git_root(dir, callback)
   job(fmt('git -C "%s" rev-parse --show-toplevel', dir), function(data) callback(data[1]) end)
 end
@@ -400,38 +405,39 @@ end
 ---@type table<string, userdata>
 local watchers = {}
 
-local on_throttled_change = utils.throttle(1000, function(watcher, callback, err, dir, status)
+local on_throttled_change = utils.throttle(1000, function(dir, err, _, status)
   if err then
-    return vim.notify(fmt('Error watching %s(%s): %s', dir, err, status), 'error', {
-      title = 'Git Conflict',
-    })
+    local msg = fmt('Error watching %s(%s): %s', dir, err, status)
+    return vim.notify(msg, vim.log.levels.ERROR, { title = 'Git Conflict' })
   end
   fetch_conflicts()
-  watcher:stop()
-  callback()
 end)
 
 --- Stop any watchers that aren't for the current project
----@param dir string
-local function toggle_dir_watchers(dir)
-  for _, w in pairs(watchers) do
-    if w ~= watchers[dir] then w:stop() end
+---@param curr_dir string
+local function stop_running_watchers(curr_dir)
+  for prev_dir, watcher in pairs(watchers) do
+    if watcher ~= watchers[curr_dir] then
+      watcher:stop()
+      watchers[prev_dir] = nil
+    end
   end
 end
 
 --- Create a FS watcher for the current git directory or restart an existing one
 ---@param dir string
 local function watch_gitdir(dir)
-  local function callback() watch_gitdir(dir) end
+  -- Stop if there is already a watcher running
+  if watchers[dir] then return end
 
   ---@type userdata
-  watchers[dir] = watchers[dir] or vim.loop.new_fs_event()
-  local w = watchers[dir]
-  w:start(
+  watchers[dir] = vim.loop.new_fs_event()
+  watchers[dir]:start(
     dir,
     { recursive = true },
-    vim.schedule_wrap(function(...) on_throttled_change(w, callback, ...) end)
+    vim.schedule_wrap(function(...) on_throttled_change(dir, ...) end)
   )
+  state.current_watcher_dir = dir
 end
 
 local throttled_watcher = utils.throttle(1000, watch_gitdir)
@@ -568,13 +574,13 @@ function M.setup(user_config)
   set_plug_mappings()
 
   api.nvim_create_augroup(AUGROUP_NAME, { clear = true })
-  api.nvim_create_autocmd({ 'VimEnter', 'SessionLoadPost', 'DirChanged' }, {
+  api.nvim_create_autocmd({ 'VimEnter', 'BufRead', 'SessionLoadPost', 'DirChanged' }, {
     group = AUGROUP_NAME,
-    callback = function()
+    callback = function(args)
       local gitdir = fn.getcwd() .. sep .. '.git'
-      if fn.isdirectory(gitdir) == 0 then return end
-      toggle_dir_watchers(gitdir)
-      fetch_conflicts()
+      if fn.isdirectory(gitdir) == 0 or state.current_watcher_dir == fn.getcwd() then return end
+      stop_running_watchers(gitdir)
+      fetch_conflicts(args.buf)
       throttled_watcher(gitdir)
     end,
   })
