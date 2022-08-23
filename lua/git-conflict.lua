@@ -68,11 +68,11 @@ local job = utils.job
 -- Constants
 -----------------------------------------------------------------------------//
 local SIDES = {
-  ours = 'ours',
-  theirs = 'theirs',
-  both = 'both',
-  base = 'base',
-  none = 'none',
+  OURS = 'ours',
+  THEIRS = 'theirs',
+  BOTH = 'both',
+  BASE = 'base',
+  NONE = 'none',
 }
 
 -- A mapping between the internal names and the display names
@@ -341,17 +341,18 @@ local function get_current_position(bufnr)
   )
 end
 
----@param pos ConflictPosition?
+---@param position ConflictPosition?
 ---@param side ConflictSide
-local function set_cursor(pos, side)
-  if pos then
-    local target = side == SIDES.ours and pos.current or pos.incoming
-    api.nvim_win_set_cursor(0, { target.range_start + 1, 0 })
-  end
+local function set_cursor(position, side)
+  if not position then return end
+  local target = side == SIDES.OURS and position.current or position.incoming
+  api.nvim_win_set_cursor(0, { target.range_start + 1, 0 })
 end
 
 ---Get the conflict marker positions for a buffer if any and update the buffers state
 ---@param bufnr integer
+---@param range_start integer
+---@param range_end integer
 local function parse_buffer(bufnr, range_start, range_end)
   local lines = utils.get_buf_lines(range_start or 0, range_end or -1, bufnr)
   local prev_conflicts = visited_buffers[bufnr].positions ~= nil
@@ -696,16 +697,16 @@ function M.choose(side)
   local position = get_current_position(bufnr)
   if not position then return end
   local lines = {}
-  if vim.tbl_contains({ SIDES.ours, SIDES.theirs, SIDES.base }, side) then
+  if vim.tbl_contains({ SIDES.OURS, SIDES.THEIRS, SIDES.BASE }, side) then
     local data = position[name_map[side]]
     lines = utils.get_buf_lines(data.content_start, data.content_end + 1)
-  elseif side == SIDES.both then
+  elseif side == SIDES.BOTH then
     local first =
       utils.get_buf_lines(position.current.content_start, position.current.content_end + 1)
     local second =
       utils.get_buf_lines(position.incoming.content_start, position.incoming.content_end + 1)
     lines = vim.list_extend(first, second)
-  elseif side == SIDES.none then
+  elseif side == SIDES.NONE then
     lines = {}
   else
     return
