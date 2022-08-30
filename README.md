@@ -44,7 +44,7 @@ I recommend using the tag field of you package manager as so your version of thi
 - `GitConflictChooseOurs` - Select the current changes.
 - `GitConflictChooseTheirs` - Select the incoming changes.
 - `GitConflictChooseBoth` - Select both changes.
-- `GitConflictChooseNone` - Select both none of the changes.
+- `GitConflictChooseNone` - Select none of the changes.
 - `GitConflictNextConflict` - Move to the next conflict.
 - `GitConflictPrevConflict` - Move to the previous conflict.
 - `GitConflictListQf` - Get all conflict to quickfix
