@@ -7,8 +7,8 @@ This plugin was inspired by [conflict-marker.vim](https://github.com/rhysd/confl
 
 ## Status
 
-This plugin is under active development, it should generally work but you're likely to
-encounter some bugs during usage. The current commands and mappings are also subject to change.
+This plugin is under active development, it should generally work, but you're likely to
+encounter some bugs during usage.
 
 ## Requirements
 
@@ -23,8 +23,7 @@ use {'akinsho/git-conflict.nvim', tag = "*", config = function()
 end}
 ```
 
-I recommend using the tag field of you package manager as so your version of this plugin is only updated when a new tag is pushed as `main` itself might be unstable.
-
+I recommend using the tag field of you package manager, so your version of this plugin is only updated when a new tag is pushed as `main` itself might be **unstable**.
 
 ## Configuration
 
@@ -41,13 +40,13 @@ I recommend using the tag field of you package manager as so your version of thi
 
 ## Commands
 
-- `GitConflictChooseOurs` - Select the current changes.
-- `GitConflictChooseTheirs` - Select the incoming changes.
-- `GitConflictChooseBoth` - Select both changes.
-- `GitConflictChooseNone` - Select none of the changes.
-- `GitConflictNextConflict` - Move to the next conflict.
-- `GitConflictPrevConflict` - Move to the previous conflict.
-- `GitConflictListQf` - Get all conflict to quickfix
+- `GitConflictChooseOurs` — Select the current changes.
+- `GitConflictChooseTheirs` — Select the incoming changes.
+- `GitConflictChooseBoth` — Select both changes.
+- `GitConflictChooseNone` — Select none of the changes.
+- `GitConflictNextConflict` — Move to the next conflict.
+- `GitConflictPrevConflict` — Move to the previous conflict.
+- `GitConflictListQf` — Get all conflict to quickfix
 
 ### Listing conflicts
 
@@ -82,18 +81,18 @@ vim.api.nvim_create_autocommand('User', {
 
 ## Mappings
 
-This plugin offers default buffer local mappings inside of conflicted files. This is primarily because applying these mappings only to relevant buffers
-is not possible through global mappings. A user can however disable these by setting `default_mappings = false` anyway and create global mappings as shown below.
+This plugin offers default buffer local mappings inside conflicted files. This is primarily because applying these mappings only to relevant buffers
+is impossible through global mappings. A user can however disable these by setting `default_mappings = false` anyway and create global mappings as shown below.
 The default mappings are:
 
-- <kbd>c</kbd><kbd>o</kbd> - choose ours
-- <kbd>c</kbd><kbd>t</kbd> - choose theirs
-- <kbd>c</kbd><kbd>b</kbd> - choose both
-- <kbd>c</kbd><kbd>0</kbd> - choose none
-- <kbd>]</kbd><kbd>x</kbd> - move to previous conflict
-- <kbd>[</kbd><kbd>x</kbd> - move to next conflict
+- <kbd>c</kbd><kbd>o</kbd> — choose ours
+- <kbd>c</kbd><kbd>t</kbd> — choose theirs
+- <kbd>c</kbd><kbd>b</kbd> — choose both
+- <kbd>c</kbd><kbd>0</kbd> — choose none
+- <kbd>]</kbd><kbd>x</kbd> — move to previous conflict
+- <kbd>[</kbd><kbd>x</kbd> — move to next conflict
 
-If you would rather not use these then disable default mappings an you can then map these yourself.
+If you would rather not use these then disable default mappings an can then map these yourself.
 
 ```lua
 vim.keymap.set('n', 'co', '<Plug>(git-conflict-ours)')
@@ -106,7 +105,7 @@ vim.keymap.set('n', '[x', '<Plug>(git-conflict-next-conflict)')
 
 ## Issues
 
-**Please read this** - This plugin is not intended to do anything other than provide fancy visuals and some mappings to handle conflict resolution
+**Please read this** — This plugin is not intended to do anything other than provide fancy visuals, and some mappings to handle conflict resolution
 It will not be expanded to become a full git management plugin, there are a zillion plugins that do that already, this won't be one of those.
 
 ### Feature requests
