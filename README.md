@@ -30,6 +30,7 @@ I recommend using the tag field of you package manager, so your version of this 
 ```lua
 {
   default_mappings = true, -- disable buffer local mapping created by this plugin
+  default_commands = true, -- disable commands created by this plugin
   disable_diagnostics = false, -- This will disable the diagnostics in a buffer whilst it is conflicted
   highlights = { -- They must have background color, otherwise the default color will be used
     incoming = 'DiffText',

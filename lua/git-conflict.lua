@@ -110,6 +110,7 @@ local DEFAULT_ANCESTOR_BG_COLOR = 6824314 -- #68217A
 local config = {
   debug = false,
   default_mappings = true,
+  default_commands = true,
   disable_diagnostics = false,
   highlights = {
     current = 'DiffText',
@@ -555,7 +556,11 @@ function M.setup(user_config)
 
   config = vim.tbl_deep_extend('force', config, user_config or {})
   set_highlights(config.highlights)
-  set_commands()
+
+  if config.default_commands then
+    set_commands()
+  end
+
   set_plug_mappings()
 
   api.nvim_create_augroup(AUGROUP_NAME, { clear = true })
