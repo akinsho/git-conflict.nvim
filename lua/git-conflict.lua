@@ -564,6 +564,13 @@ function M.setup(user_config)
   set_plug_mappings()
 
   api.nvim_create_augroup(AUGROUP_NAME, { clear = true })
+  api.nvim_create_autocmd('ColorScheme', {
+    group = AUGROUP_NAME,
+    callback = function()
+      set_highlights(config.highlights)
+    end
+  })
+
   api.nvim_create_autocmd({ 'VimEnter', 'BufRead', 'SessionLoadPost', 'DirChanged' }, {
     group = AUGROUP_NAME,
     callback = function(args)
