@@ -58,8 +58,22 @@ local job = utils.job
 --- @field tick integer
 --- @field bufnr integer
 
+--- @class GitConflictMappings
+--- @field ours string
+--- @field theirs string
+--- @field none string
+--- @field both string
+--- @field next string
+--- @field prev string
+
 --- @class GitConflictConfig
---- @field default_mappings boolean
+--- @field default_mappings GitConflictMappings
+--- @field disable_diagnostics boolean
+--- @field highlights ConflictHighlights
+--- @field debug boolean
+
+--- @class GitConflictUserConfig
+--- @field default_mappings boolean|GitConflictMappings
 --- @field disable_diagnostics boolean
 --- @field highlights ConflictHighlights
 --- @field debug boolean
@@ -106,10 +120,20 @@ local DEFAULT_INCOMING_BG_COLOR = 3229523 -- #314753
 local DEFAULT_ANCESTOR_BG_COLOR = 6824314 -- #68217A
 -----------------------------------------------------------------------------//
 
+--- @type GitConflictMappings
+local DEFAULT_MAPPINGS = {
+  ours = 'co',
+  theirs = 'ct',
+  none = 'c0',
+  both = 'cb',
+  next = '[x',
+  prev = ']x',
+}
+
 --- @type GitConflictConfig
 local config = {
   debug = false,
-  default_mappings = true,
+  default_mappings = DEFAULT_MAPPINGS,
   default_commands = true,
   disable_diagnostics = false,
   highlights = {
@@ -498,12 +522,12 @@ local function setup_buffer_mappings(bufnr)
     return { silent = true, buffer = bufnr, desc = 'Git Conflict: ' .. desc }
   end
 
-  map('n', 'co', '<Plug>(git-conflict-ours)', opts('Choose Ours'))
-  map('n', 'cb', '<Plug>(git-conflict-both)', opts('Choose Both'))
-  map('n', 'c0', '<Plug>(git-conflict-none)', opts('Choose None'))
-  map('n', 'ct', '<Plug>(git-conflict-theirs)', opts('Choose Theirs'))
-  map('n', '[x', '<Plug>(git-conflict-prev-conflict)', opts('Previous Conflict'))
-  map('n', ']x', '<Plug>(git-conflict-next-conflict)', opts('Next Conflict'))
+  map('n', config.default_mappings.ours,   '<Plug>(git-conflict-ours)', opts('Choose Ours'))
+  map('n', config.default_mappings.both,   '<Plug>(git-conflict-both)', opts('Choose Both'))
+  map('n', config.default_mappings.none,   '<Plug>(git-conflict-none)', opts('Choose None'))
+  map('n', config.default_mappings.theirs, '<Plug>(git-conflict-theirs)', opts('Choose Theirs'))
+  map('n', config.default_mappings.prev,   '<Plug>(git-conflict-prev-conflict)', opts('Previous Conflict'))
+  map('n', config.default_mappings.next,   '<Plug>(git-conflict-next-conflict)', opts('Next Conflict'))
   vim.b[bufnr].conflict_mappings_set = true
 end
 
@@ -513,13 +537,12 @@ end
 local function is_mapped(key, mode) return fn.hasmapto(key, mode or 'n') > 0 end
 
 local function clear_buffer_mappings(bufnr)
-  if not bufnr or not vim.b[bufnr].conflict_mappings_set then return end
-  if is_mapped('co') then api.nvim_buf_del_keymap(bufnr, 'n', 'co') end
-  if is_mapped('cb') then api.nvim_buf_del_keymap(bufnr, 'n', 'cb') end
-  if is_mapped('c0') then api.nvim_buf_del_keymap(bufnr, 'n', 'c0') end
-  if is_mapped('ct') then api.nvim_buf_del_keymap(bufnr, 'n', 'ct') end
-  if is_mapped('[x') then api.nvim_buf_del_keymap(bufnr, 'n', '[x') end
-  if is_mapped(']x') then api.nvim_buf_del_keymap(bufnr, 'n', ']x') end
+  if not bufnr or not vim.b[bufnr].conflict_mappings_set or type(config.default_mappings) ~= 'table' then return end
+  ---@type GitConflictMappings
+  local mappings = config.default_mappings
+  for _, mapping in ipairs(mappings) do
+    if is_mapped(mapping) then api.nvim_buf_del_keymap(bufnr, 'n', mapping) end
+  end
   vim.b[bufnr].conflict_mappings_set = false
 end
 
@@ -547,6 +570,7 @@ local function set_highlights(highlights)
   api.nvim_set_hl(0, ANCESTOR_LABEL_HL, { background = ancestor_label_bg })
 end
 
+---@param user_config GitConflictUserConfig
 function M.setup(user_config)
   if fn.executable('git') <= 0 then
     return vim.schedule(
@@ -554,7 +578,14 @@ function M.setup(user_config)
     )
   end
 
-  config = vim.tbl_deep_extend('force', config, user_config or {})
+  local _user_config = user_config or {}
+
+  if _user_config.default_mappings == true then
+    _user_config.default_mappings = DEFAULT_MAPPINGS
+  end
+
+  config = vim.tbl_deep_extend('force', config, _user_config)
+
   set_highlights(config.highlights)
 
   if config.default_commands then
