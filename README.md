@@ -93,7 +93,26 @@ The default mappings are:
 - <kbd>]</kbd><kbd>x</kbd> — move to previous conflict
 - <kbd>[</kbd><kbd>x</kbd> — move to next conflict
 
-If you would rather not use these then disable default mappings an can then map these yourself.
+If you would rather not use these then you can specify your own mappings.
+
+```lua
+require'git-conflict'.setup {
+  default_mappings = {
+    ours = 'o',
+    theirs = 't',
+    none = '0',
+    both = 'b',
+    next = 'n',
+    prev = 'p',
+  },
+}
+```
+
+or alternatively, set `default_mappings = false` and apply the mappings yourself
+
+<details><summary>example manual mappings</summary>
+
+
 
 ```lua
 vim.keymap.set('n', 'co', '<Plug>(git-conflict-ours)')
@@ -103,6 +122,8 @@ vim.keymap.set('n', 'c0', '<Plug>(git-conflict-none)')
 vim.keymap.set('n', ']x', '<Plug>(git-conflict-prev-conflict)')
 vim.keymap.set('n', '[x', '<Plug>(git-conflict-next-conflict)')
 ```
+
+</details>
 
 ## Issues
 
