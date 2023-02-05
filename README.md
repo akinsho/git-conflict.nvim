@@ -108,6 +108,23 @@ require'git-conflict'.setup {
 }
 ```
 
+or alternatively, set `default_mappings = false` and apply the mappings yourself
+
+<details><summary>example manual mappings</summary>
+
+
+
+```lua
+vim.keymap.set('n', 'co', '<Plug>(git-conflict-ours)')
+vim.keymap.set('n', 'ct', '<Plug>(git-conflict-theirs)')
+vim.keymap.set('n', 'cb', '<Plug>(git-conflict-both)')
+vim.keymap.set('n', 'c0', '<Plug>(git-conflict-none)')
+vim.keymap.set('n', ']x', '<Plug>(git-conflict-prev-conflict)')
+vim.keymap.set('n', '[x', '<Plug>(git-conflict-next-conflict)')
+```
+
+</details>
+
 ## Issues
 
 **Please read this** — This plugin is not intended to do anything other than provide fancy visuals, and some mappings to handle conflict resolution
