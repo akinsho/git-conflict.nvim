@@ -537,11 +537,11 @@ end
 local function is_mapped(key, mode) return fn.hasmapto(key, mode or 'n') > 0 end
 
 local function clear_buffer_mappings(bufnr)
-  if not bufnr or not vim.b[bufnr].conflict_mappings_set or type(config.default_mappings) ~= 'table' then return end
-  ---@type GitConflictMappings
-  local mappings = config.default_mappings
-  for _, mapping in ipairs(mappings) do
-    if is_mapped(mapping) then api.nvim_buf_del_keymap(bufnr, 'n', mapping) end
+  if not bufnr or not vim.b[bufnr].conflict_mappings_set then return end
+  for _, mapping in pairs(config.default_mappings) do
+    if is_mapped(mapping) then
+      api.nvim_buf_del_keymap(bufnr, 'n', mapping)
+    end
   end
   vim.b[bufnr].conflict_mappings_set = false
 end
