@@ -522,12 +522,22 @@ local function setup_buffer_mappings(bufnr)
     return { silent = true, buffer = bufnr, desc = 'Git Conflict: ' .. desc }
   end
 
-  map('n', config.default_mappings.ours,   '<Plug>(git-conflict-ours)', opts('Choose Ours'))
-  map('n', config.default_mappings.both,   '<Plug>(git-conflict-both)', opts('Choose Both'))
-  map('n', config.default_mappings.none,   '<Plug>(git-conflict-none)', opts('Choose None'))
+  map('n', config.default_mappings.ours, '<Plug>(git-conflict-ours)', opts('Choose Ours'))
+  map('n', config.default_mappings.both, '<Plug>(git-conflict-both)', opts('Choose Both'))
+  map('n', config.default_mappings.none, '<Plug>(git-conflict-none)', opts('Choose None'))
   map('n', config.default_mappings.theirs, '<Plug>(git-conflict-theirs)', opts('Choose Theirs'))
-  map('n', config.default_mappings.prev,   '<Plug>(git-conflict-prev-conflict)', opts('Previous Conflict'))
-  map('n', config.default_mappings.next,   '<Plug>(git-conflict-next-conflict)', opts('Next Conflict'))
+  map(
+    'n',
+    config.default_mappings.prev,
+    '<Plug>(git-conflict-prev-conflict)',
+    opts('Previous Conflict')
+  )
+  map(
+    'n',
+    config.default_mappings.next,
+    '<Plug>(git-conflict-next-conflict)',
+    opts('Next Conflict')
+  )
   vim.b[bufnr].conflict_mappings_set = true
 end
 
@@ -539,9 +549,7 @@ local function is_mapped(key, mode) return fn.hasmapto(key, mode or 'n') > 0 end
 local function clear_buffer_mappings(bufnr)
   if not bufnr or not vim.b[bufnr].conflict_mappings_set then return end
   for _, mapping in pairs(config.default_mappings) do
-    if is_mapped(mapping) then
-      api.nvim_buf_del_keymap(bufnr, 'n', mapping)
-    end
+    if is_mapped(mapping) then api.nvim_buf_del_keymap(bufnr, 'n', mapping) end
   end
   vim.b[bufnr].conflict_mappings_set = false
 end
@@ -574,32 +582,28 @@ end
 function M.setup(user_config)
   if fn.executable('git') <= 0 then
     return vim.schedule(
-      function() utils.notify('You need to have git installed in order to use this plugin', 'error', true) end
+      function()
+        utils.notify('You need to have git installed in order to use this plugin', 'error', true)
+      end
     )
   end
 
   local _user_config = user_config or {}
 
-  if _user_config.default_mappings == true then
-    _user_config.default_mappings = DEFAULT_MAPPINGS
-  end
+  if _user_config.default_mappings == true then _user_config.default_mappings = DEFAULT_MAPPINGS end
 
   config = vim.tbl_deep_extend('force', config, _user_config)
 
   set_highlights(config.highlights)
 
-  if config.default_commands then
-    set_commands()
-  end
+  if config.default_commands then set_commands() end
 
   set_plug_mappings()
 
   api.nvim_create_augroup(AUGROUP_NAME, { clear = true })
   api.nvim_create_autocmd('ColorScheme', {
     group = AUGROUP_NAME,
-    callback = function()
-      set_highlights(config.highlights)
-    end
+    callback = function() set_highlights(config.highlights) end,
   })
 
   api.nvim_create_autocmd({ 'VimEnter', 'BufRead', 'SessionLoadPost', 'DirChanged' }, {
