@@ -24,7 +24,7 @@ local job = utils.job
 -- Types
 -----------------------------------------------------------------------------//
 
----@alias ConflictSide "'ours'"|"'theirs'"|"'both'"|"'none"
+---@alias ConflictSide "'ours'"|"'theirs'"|"'both'"|"'base'"|"'none'"
 
 --- @class ConflictHighlights
 --- @field current string
