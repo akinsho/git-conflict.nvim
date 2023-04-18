@@ -27,7 +27,7 @@ end}
 {'akinsho/git-conflict.nvim', version = "*", config = true}
 ```
 
-I recommend using the tag field of you package manager, so your version of this plugin is only updated when a new tag is pushed as `main` itself might be **unstable**.
+I recommend using the {tag|version} field of your package manager, so your version of this plugin is only updated when a new tag is pushed as `main` itself might be **unstable**.
 
 ## Configuration
 
