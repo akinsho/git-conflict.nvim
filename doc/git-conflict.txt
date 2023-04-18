@@ -39,9 +39,13 @@ REQUIREMENTS                     *git-conflict-git-conflict.nvim-requirements*
 INSTALLATION                     *git-conflict-git-conflict.nvim-installation*
 
 >lua
+    -- packer.nvim
     use {'akinsho/git-conflict.nvim', tag = "", config = function()
       require('git-conflict').setup()
     end}
+    
+    -- lazy.nvim
+    {'akinsho/git-conflict.nvim', version = "", config = true}
 <
 
 I recommend using the tag field of you package manager, so your version of this
