@@ -18,9 +18,13 @@ encounter some bugs during usage.
 ## Installation
 
 ```lua
+-- packer.nvim
 use {'akinsho/git-conflict.nvim', tag = "*", config = function()
   require('git-conflict').setup()
 end}
+
+-- lazy.nvim
+{'akinsho/git-conflict.nvim', version = "*", config = true}
 ```
 
 I recommend using the tag field of you package manager, so your version of this plugin is only updated when a new tag is pushed as `main` itself might be **unstable**.
@@ -111,8 +115,6 @@ require'git-conflict'.setup {
 or alternatively, set `default_mappings = false` and apply the mappings yourself
 
 <details><summary>example manual mappings</summary>
-
-
 
 ```lua
 vim.keymap.set('n', 'co', '<Plug>(git-conflict-ours)')
