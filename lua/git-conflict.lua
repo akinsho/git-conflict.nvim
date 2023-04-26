@@ -403,7 +403,7 @@ end
 --- as the result (files) might contain only files from a buffer in
 --- a different repository in which case extmarks could be cleared for unrelated projects
 local function fetch_conflicts(buf)
-  buf = buf or api.nvim_get_current_buf()
+  buf = (buf and api.nvim_buf_is_valid(buf)) and buf or api.nvim_get_current_buf()
   get_git_root(fn.fnamemodify(api.nvim_buf_get_name(buf), ':h'), function(git_root)
     get_conflicted_files(git_root, function(files, repo)
       for name, b in pairs(visited_buffers) do
