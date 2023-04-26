@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.1.2](https://github.com/akinsho/git-conflict.nvim/compare/v1.1.1...v1.1.2) (2023-04-26)
+
+
+### Bug Fixes
+
+* highlights should be default ([75e9056](https://github.com/akinsho/git-conflict.nvim/commit/75e90560521e5e395452e9a9f36309ae8f6000a7))
+
 ## [1.1.1](https://github.com/akinsho/git-conflict.nvim/compare/v1.1.0...v1.1.1) (2023-04-26)
 
 
