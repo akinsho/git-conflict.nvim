@@ -570,12 +570,12 @@ local function set_highlights(highlights)
   local current_label_bg = color.shade_color(current_bg, 60)
   local incoming_label_bg = color.shade_color(incoming_bg, 60)
   local ancestor_label_bg = color.shade_color(ancestor_bg, 60)
-  api.nvim_set_hl(0, CURRENT_HL, { background = current_bg, bold = true })
-  api.nvim_set_hl(0, INCOMING_HL, { background = incoming_bg, bold = true })
-  api.nvim_set_hl(0, ANCESTOR_HL, { background = ancestor_bg, bold = true })
-  api.nvim_set_hl(0, CURRENT_LABEL_HL, { background = current_label_bg })
-  api.nvim_set_hl(0, INCOMING_LABEL_HL, { background = incoming_label_bg })
-  api.nvim_set_hl(0, ANCESTOR_LABEL_HL, { background = ancestor_label_bg })
+  api.nvim_set_hl(0, CURRENT_HL, { background = current_bg, bold = true, default = true })
+  api.nvim_set_hl(0, INCOMING_HL, { background = incoming_bg, bold = true, default = true })
+  api.nvim_set_hl(0, ANCESTOR_HL, { background = ancestor_bg, bold = true, default = true })
+  api.nvim_set_hl(0, CURRENT_LABEL_HL, { background = current_label_bg, default = true })
+  api.nvim_set_hl(0, INCOMING_LABEL_HL, { background = incoming_label_bg, default = true })
+  api.nvim_set_hl(0, ANCESTOR_LABEL_HL, { background = ancestor_label_bg, default = true })
 end
 
 ---@param user_config GitConflictUserConfig
