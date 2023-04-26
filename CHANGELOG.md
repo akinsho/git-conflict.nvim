@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.1.1](https://github.com/akinsho/git-conflict.nvim/compare/v1.1.0...v1.1.1) (2023-04-26)
+
+
+### Bug Fixes
+
+* check buffer is valid before using it ([e41555b](https://github.com/akinsho/git-conflict.nvim/commit/e41555bf0be8a06589b5a7598220e33962333feb)), closes [#50](https://github.com/akinsho/git-conflict.nvim/issues/50)
+
 ## [1.1.0](https://github.com/akinsho/git-conflict.nvim/compare/v1.0.0...v1.1.0) (2023-04-18)
 
 
