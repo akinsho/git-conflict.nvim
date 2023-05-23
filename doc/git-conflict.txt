@@ -1,4 +1,4 @@
-*git-conflict.txt*        For Neovim >= 0.8.0       Last change: 2023 April 27
+*git-conflict.txt*         For Neovim >= 0.8.0        Last change: 2023 May 23
 
 ==============================================================================
 Table of Contents                             *git-conflict-table-of-contents*
@@ -31,7 +31,6 @@ likely to encounter some bugs during usage.
 
 REQUIREMENTS                     *git-conflict-git-conflict.nvim-requirements*
 
-
 - `git`
 - `nvim 0.7+`
 
@@ -61,15 +60,14 @@ CONFIGURATION                   *git-conflict-git-conflict.nvim-configuration*
       default_commands = true, -- disable commands created by this plugin
       disable_diagnostics = false, -- This will disable the diagnostics in a buffer whilst it is conflicted
       highlights = { -- They must have background color, otherwise the default color will be used
-        incoming = 'DiffText',
-        current = 'DiffAdd',
+        incoming = 'DiffAdd',
+        current = 'DiffText',
       }
     }
 <
 
 
 COMMANDS                             *git-conflict-git-conflict.nvim-commands*
-
 
 - `GitConflictChooseOurs` — Select the current changes.
 - `GitConflictChooseTheirs` — Select the incoming changes.
@@ -119,7 +117,6 @@ is primarily because applying these mappings only to relevant buffers is
 impossible through global mappings. A user can however disable these by setting
 `default_mappings = false` anyway and create global mappings as shown below.
 The default mappings are:
-
 
 - co — choose ours
 - ct — choose theirs
