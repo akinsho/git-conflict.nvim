@@ -69,14 +69,14 @@ local job = utils.job
 --- @class GitConflictConfig
 --- @field default_mappings GitConflictMappings
 --- @field disable_diagnostics boolean
---- @field open_qf_command string|function
+--- @field list_opener string|function
 --- @field highlights ConflictHighlights
 --- @field debug boolean
 
 --- @class GitConflictUserConfig
 --- @field default_mappings boolean|GitConflictMappings
 --- @field disable_diagnostics boolean
---- @field open_qf_command string|function
+--- @field list_opener string|function
 --- @field highlights ConflictHighlights
 --- @field debug boolean
 
@@ -138,7 +138,7 @@ local config = {
   default_mappings = DEFAULT_MAPPINGS,
   default_commands = true,
   disable_diagnostics = false,
-  open_qf_command = 'copen',
+  list_opener = 'copen',
   highlights = {
     current = 'DiffText',
     incoming = 'DiffAdd',
@@ -482,10 +482,10 @@ local function set_commands()
     M.conflicts_to_qf_items(function(items)
       if #items > 0 then
         fn.setqflist(items, 'r')
-        if type(config.open_qf_command) == 'function' then
-          config.open_qf_command()
+        if type(config.list_opener) == 'function' then
+          config.list_opener()
         else
-          vim.cmd(config.open_qf_command)
+          vim.cmd(config.list_opener)
         end
       end
     end)
