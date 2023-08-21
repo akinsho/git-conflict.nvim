@@ -1,5 +1,17 @@
 # Changelog
 
+## [1.2.0](https://github.com/akinsho/git-conflict.nvim/compare/v1.1.2...v1.2.0) (2023-08-21)
+
+
+### Features
+
+* Add a list_opener setting ([#63](https://github.com/akinsho/git-conflict.nvim/issues/63)) ([1e74b7d](https://github.com/akinsho/git-conflict.nvim/commit/1e74b7dd6c1b4c6750e6f917f91012c450aece86))
+
+
+### Bug Fixes
+
+* use a list for jobstart [#58](https://github.com/akinsho/git-conflict.nvim/issues/58) ([#59](https://github.com/akinsho/git-conflict.nvim/issues/59)) ([751d98b](https://github.com/akinsho/git-conflict.nvim/commit/751d98be83a9c7bdf0a136d05d8b7b1c25560368))
+
 ## [1.1.2](https://github.com/akinsho/git-conflict.nvim/compare/v1.1.1...v1.1.2) (2023-04-26)
 
 
