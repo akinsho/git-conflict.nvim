@@ -690,29 +690,23 @@ end
 ---@param callback fun(files: table<string, integer[]>)
 function M.conflicts_to_qf_items(callback)
   local items = {}
-  ---@diagnostic disable-next-line: missing-parameter
-  get_conflicted_files(fn.expand('%:p:h'), function(files)
-    for filename, _ in pairs(files) do
-      local item = {
-        filename = filename,
-        pattern = conflict_start,
-        text = 'git conflict',
-        type = 'E',
-        valid = 1,
-      }
-      local visited_buf = nil
+  for filename, visited_buf in pairs(visited_buffers) do
+    local item = {
+      filename = filename,
+      pattern = conflict_start,
+      text = 'git conflict',
+      type = 'E',
+      valid = 1,
+    }
 
-      local buf = visited_buffers[filename]
-      if buf and next(buf) then visited_buf = buf end
-
-      if visited_buf then
-        quickfix_items_from_positions(item, items, visited_buf)
-      else
-        table.insert(items, item)
-      end
+    if visited_buf and next(visited_buf) then
+      quickfix_items_from_positions(item, items, visited_buf)
+    else
+      table.insert(items, item)
     end
+
     callback(items)
-  end)
+  end
 end
 
 ---@param bufnr integer?
