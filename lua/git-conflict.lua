@@ -128,8 +128,8 @@ local DEFAULT_MAPPINGS = {
   theirs = 'ct',
   none = 'c0',
   both = 'cb',
-  next = '[x',
-  prev = ']x',
+  prev = '[x',
+  next = ']x',
 }
 
 --- @type GitConflictConfig
