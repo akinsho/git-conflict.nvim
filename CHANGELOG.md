@@ -1,5 +1,13 @@
 # Changelog
 
+## [1.2.1](https://github.com/akinsho/git-conflict.nvim/compare/v1.2.0...v1.2.1) (2023-08-31)
+
+
+### Bug Fixes
+
+* **mappings:** set mappings if needed when parsing buffer ([#66](https://github.com/akinsho/git-conflict.nvim/issues/66)) ([b1c1274](https://github.com/akinsho/git-conflict.nvim/commit/b1c1274873f0b9a1b8da7eac62bb74c9266d4410))
+* **quickfix cmd:** construct items from visited buffers ([#68](https://github.com/akinsho/git-conflict.nvim/issues/68)) ([cee519e](https://github.com/akinsho/git-conflict.nvim/commit/cee519ef0482b20e506ae1401f82f3c7b23a6c03))
+
 ## [1.2.0](https://github.com/akinsho/git-conflict.nvim/compare/v1.1.2...v1.2.0) (2023-08-21)
 
 
