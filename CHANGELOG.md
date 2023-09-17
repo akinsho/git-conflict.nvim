@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.2.2](https://github.com/akinsho/git-conflict.nvim/compare/v1.2.1...v1.2.2) (2023-09-17)
+
+
+### Bug Fixes
+
+* **quickfix:** invoke callback once with all items ([#70](https://github.com/akinsho/git-conflict.nvim/issues/70)) ([a97a355](https://github.com/akinsho/git-conflict.nvim/commit/a97a35507a485d6bbdc3c67820a8ca459c9c3f49))
+
 ## [1.2.1](https://github.com/akinsho/git-conflict.nvim/compare/v1.2.0...v1.2.1) (2023-08-31)
 
 
