@@ -1,4 +1,4 @@
-*git-conflict.txt*      For Neovim >= 0.8.0     Last change: 2023 September 13
+*git-conflict.txt*      For Neovim >= 0.8.0     Last change: 2023 September 17
 
 ==============================================================================
 Table of Contents                             *git-conflict-table-of-contents*
@@ -39,12 +39,12 @@ INSTALLATION                     *git-conflict-git-conflict.nvim-installation*
 
 >lua
     -- packer.nvim
-    use {'akinsho/git-conflict.nvim', tag = "", config = function()
+    use {'akinsho/git-conflict.nvim', tag = "*", config = function()
       require('git-conflict').setup()
     end}
     
     -- lazy.nvim
-    {'akinsho/git-conflict.nvim', version = "", config = true}
+    {'akinsho/git-conflict.nvim', version = "*", config = true}
 <
 
 I recommend using the {tag|version} field of your package manager, so your
