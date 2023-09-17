@@ -704,9 +704,9 @@ function M.conflicts_to_qf_items(callback)
     else
       table.insert(items, item)
     end
-
-    callback(items)
   end
+
+  callback(items)
 end
 
 ---@param bufnr integer?
