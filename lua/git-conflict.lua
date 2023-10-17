@@ -72,6 +72,7 @@ local job = utils.job
 --- @field list_opener string|function
 --- @field highlights ConflictHighlights
 --- @field debug boolean
+--- @field default_colors boolean
 
 --- @class GitConflictUserConfig
 --- @field default_mappings boolean|GitConflictMappings
@@ -79,6 +80,7 @@ local job = utils.job
 --- @field list_opener string|function
 --- @field highlights ConflictHighlights
 --- @field debug boolean
+--- @field default_colors boolean
 
 -----------------------------------------------------------------------------//
 -- Constants
@@ -139,6 +141,7 @@ local config = {
   default_commands = true,
   disable_diagnostics = false,
   list_opener = 'copen',
+  default_colors = false,
   highlights = {
     current = 'DiffText',
     incoming = 'DiffAdd',
@@ -567,13 +570,19 @@ end
 
 ---Derive the colour of the section label highlights based on each sections highlights
 ---@param highlights ConflictHighlights
-local function set_highlights(highlights)
+---@param default_colors boolean
+local function set_highlights(highlights, default_colors)
   local current_color = utils.get_hl(highlights.current)
   local incoming_color = utils.get_hl(highlights.incoming)
   local ancestor_color = utils.get_hl(highlights.ancestor)
-  local current_bg = current_color.background or DEFAULT_CURRENT_BG_COLOR
-  local incoming_bg = incoming_color.background or DEFAULT_INCOMING_BG_COLOR
-  local ancestor_bg = ancestor_color.background or DEFAULT_ANCESTOR_BG_COLOR
+  local current_bg = DEFAULT_CURRENT_BG_COLOR
+  local incoming_bg = DEFAULT_INCOMING_BG_COLOR
+  local ancestor_bg = DEFAULT_ANCESTOR_BG_COLOR
+  if not default_colors then
+    current_bg = current_color.background or DEFAULT_CURRENT_BG_COLOR
+    incoming_bg = incoming_color.background or DEFAULT_INCOMING_BG_COLOR
+    ancestor_bg = ancestor_color.background or DEFAULT_ANCESTOR_BG_COLOR
+  end
   local current_label_bg = color.shade_color(current_bg, 60)
   local incoming_label_bg = color.shade_color(incoming_bg, 60)
   local ancestor_label_bg = color.shade_color(ancestor_bg, 60)
@@ -601,7 +610,7 @@ function M.setup(user_config)
 
   config = vim.tbl_deep_extend('force', config, _user_config)
 
-  set_highlights(config.highlights)
+  set_highlights(config.highlights, config.default_colors)
 
   if config.default_commands then set_commands() end
 
@@ -610,7 +619,7 @@ function M.setup(user_config)
   api.nvim_create_augroup(AUGROUP_NAME, { clear = true })
   api.nvim_create_autocmd('ColorScheme', {
     group = AUGROUP_NAME,
-    callback = function() set_highlights(config.highlights) end,
+    callback = function() set_highlights(config.highlights, config.default_colors) end,
   })
 
   api.nvim_create_autocmd({ 'VimEnter', 'BufRead', 'SessionLoadPost', 'DirChanged' }, {
