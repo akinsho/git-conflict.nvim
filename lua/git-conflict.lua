@@ -775,4 +775,14 @@ end
 
 function M.debug_watchers() vim.pretty_print({ watchers = watchers }) end
 
+function M.conflict_count(bufnr)
+  if bufnr and not api.nvim_buf_is_valid(bufnr) then return 0 end
+  bufnr = bufnr or 0
+
+  local name = api.nvim_buf_get_name(bufnr)
+  if not visited_buffers[name] then return 0 end
+
+  return #visited_buffers[name].positions
+end
+
 return M

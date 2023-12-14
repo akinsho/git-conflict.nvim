@@ -128,6 +128,26 @@ vim.keymap.set('n', '[x', '<Plug>(git-conflict-next-conflict)')
 
 </details>
 
+## API
+
+This plugin exposes an API to extract some of the data it collects for other
+purposes.
+
+<details><summary>conflict_count({bufnr})</summary>
+
+```vimdoc
+    Returns the amount of conflicts in a given buffer.
+    
+
+    Parameters:
+	{bufnr} (number) Specify the buffer for which you want to know the
+	                 amount of conflicts (default: current buffer).
+
+    Return:
+	number: The amount of conflicts.
+```
+</details>
+
 ## Issues
 
 **Please read this** — This plugin is not intended to do anything other than provide fancy visuals, and some mappings to handle conflict resolution
