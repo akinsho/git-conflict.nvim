@@ -1,4 +1,4 @@
-*git-conflict.txt*      For Neovim >= 0.8.0     Last change: 2023 September 18
+*git-conflict.txt*       For Neovim >= 0.8.0      Last change: 2024 January 03
 
 ==============================================================================
 Table of Contents                             *git-conflict-table-of-contents*
@@ -11,6 +11,7 @@ Table of Contents                             *git-conflict-table-of-contents*
   - Commands                         |git-conflict-git-conflict.nvim-commands|
   - Autocommands                 |git-conflict-git-conflict.nvim-autocommands|
   - Mappings                         |git-conflict-git-conflict.nvim-mappings|
+  - API                                   |git-conflict-git-conflict.nvim-api|
   - Issues                             |git-conflict-git-conflict.nvim-issues|
 
 ==============================================================================
@@ -154,6 +155,24 @@ example manual mappings ~
     vim.keymap.set('n', ']x', '<Plug>(git-conflict-prev-conflict)')
     vim.keymap.set('n', '[x', '<Plug>(git-conflict-next-conflict)')
 <
+
+
+API                                       *git-conflict-git-conflict.nvim-api*
+
+This plugin exposes an API to extract some of the data it collects for other
+purposes.
+
+conflict_count({bufnr}) ~
+
+    Returns the amount of conflicts in a given buffer.
+    
+
+    Parameters:
+    {bufnr} (number) Specify the buffer for which you want to know the
+                     amount of conflicts (default: current buffer).
+
+    Return:
+    number: The amount of conflicts.
 
 
 ISSUES                                 *git-conflict-git-conflict.nvim-issues*
