@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.3.0](https://github.com/akinsho/git-conflict.nvim/compare/v1.2.2...v1.3.0) (2024-01-22)
+
+
+### Features
+
+* **api:** add conflict_count function ([#75](https://github.com/akinsho/git-conflict.nvim/issues/75)) ([599d380](https://github.com/akinsho/git-conflict.nvim/commit/599d3809ea3bf1ef26c8368bfc74c50c44f39913))
+
 ## [1.2.2](https://github.com/akinsho/git-conflict.nvim/compare/v1.2.1...v1.2.2) (2023-09-17)
 
 
