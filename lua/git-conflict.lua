@@ -617,7 +617,7 @@ function M.setup(user_config)
     group = AUGROUP_NAME,
     callback = function(args)
       local gitdir = fn.getcwd() .. sep .. '.git'
-      if fn.isdirectory(gitdir) == 0 or state.current_watcher_dir == fn.getcwd() then return end
+      if not vim.loop.fs_stat(gitdir) or state.current_watcher_dir == fn.getcwd() then return end
       stop_running_watchers(gitdir)
       fetch_conflicts(args.buf)
       throttled_watcher(gitdir)
