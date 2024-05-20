@@ -752,8 +752,8 @@ function M.choose(side)
       local start = vim.api.nvim_buf_get_mark(0, '<')[1]
       local finish = vim.api.nvim_buf_get_mark(0, '>')[1]
       local position = find_position(bufnr, function(line, pos)
-        local left = pos.current.range_start >= start
-        local right = pos.incoming.range_end <= finish
+        local left = pos.current.range_start >= start - 1
+        local right = pos.incoming.range_end <= finish + 1
         return left and right
       end)
       while position ~= nil do
@@ -784,8 +784,8 @@ function M.choose(side)
         end
         parse_buffer(bufnr)
         position = find_position(bufnr, function(line, pos)
-          local left = pos.current.range_start >= start
-          local right = pos.incoming.range_end <= finish
+          local left = pos.current.range_start >= start - 1
+          local right = pos.incoming.range_end <= finish + 1
           return left and right
         end)
       end
