@@ -95,8 +95,8 @@ The default mappings are:
 - <kbd>c</kbd><kbd>t</kbd> — choose theirs
 - <kbd>c</kbd><kbd>b</kbd> — choose both
 - <kbd>c</kbd><kbd>0</kbd> — choose none
-- <kbd>]</kbd><kbd>x</kbd> — move to previous conflict
-- <kbd>[</kbd><kbd>x</kbd> — move to next conflict
+- <kbd>[</kbd><kbd>x</kbd> — move to previous conflict
+- <kbd>]</kbd><kbd>x</kbd> — move to next conflict
 
 If you would rather not use these then you can specify your own mappings.
 
@@ -122,8 +122,8 @@ vim.keymap.set('n', 'co', '<Plug>(git-conflict-ours)')
 vim.keymap.set('n', 'ct', '<Plug>(git-conflict-theirs)')
 vim.keymap.set('n', 'cb', '<Plug>(git-conflict-both)')
 vim.keymap.set('n', 'c0', '<Plug>(git-conflict-none)')
-vim.keymap.set('n', ']x', '<Plug>(git-conflict-prev-conflict)')
-vim.keymap.set('n', '[x', '<Plug>(git-conflict-next-conflict)')
+vim.keymap.set('n', '[x', '<Plug>(git-conflict-prev-conflict)')
+vim.keymap.set('n', ']x', '<Plug>(git-conflict-next-conflict)')
 ```
 
 </details>
