@@ -1,4 +1,4 @@
-*git-conflict.txt*       For Neovim >= 0.8.0      Last change: 2024 January 22
+*git-conflict.txt*         For Neovim >= 0.8.0        Last change: 2024 May 25
 
 ==============================================================================
 Table of Contents                             *git-conflict-table-of-contents*
