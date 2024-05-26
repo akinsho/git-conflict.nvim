@@ -263,7 +263,7 @@ local function highlight_conflicts(positions, lines)
 
     local curr_label_id = draw_section_label(bufnr, CURRENT_LABEL_HL, current_label, current_start)
     local curr_id = hl_range(bufnr, CURRENT_HL, current_start, current_end + 1)
-    local inc_id = hl_range(bufnr, INCOMING_HL, incoming_start, incoming_end)
+    local inc_id = hl_range(bufnr, INCOMING_HL, incoming_start, incoming_end + 1)
     local inc_label_id = draw_section_label(bufnr, INCOMING_LABEL_HL, incoming_label, incoming_end)
 
     position.marks = {
