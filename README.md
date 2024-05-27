@@ -60,7 +60,7 @@ You can list conflicts in the quick fix list using the `GitConflictListQf` comma
 
 <img width="475" alt="Screen Shot 2022-03-27 at 12 03 43" src="https://user-images.githubusercontent.com/22454918/160278511-705a0361-a387-4fc1-8b20-bd799bf85b82.png">
 
-quickfix displayed using [nvim-pqf](https://gitlab.com/yorickpeterse/nvim-pqf)
+quickfix displayed using [nvim-pqf](https://github.com/yorickpeterse/nvim-pqf)
 
 ## Autocommands
 
