@@ -87,7 +87,7 @@ command
 
 
 
-quickfix displayed using nvim-pqf <https://gitlab.com/yorickpeterse/nvim-pqf>
+quickfix displayed using nvim-pqf <https://github.com/yorickpeterse/nvim-pqf>
 
 
 AUTOCOMMANDS                     *git-conflict-git-conflict.nvim-autocommands*
