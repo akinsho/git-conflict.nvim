@@ -342,6 +342,7 @@ local function find_position(bufnr, comparator, opts)
   local match = visited_buffers[bufnr]
   if not match then return end
   local line = utils.get_cursor_pos()
+  line = line - 1 -- Convert to 0-based for position comparison
 
   if opts and opts.reverse then
     for i = #match.positions, 1, -1 do
