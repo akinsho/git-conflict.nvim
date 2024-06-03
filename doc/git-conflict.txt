@@ -1,4 +1,4 @@
-*git-conflict.txt*         For Neovim >= 0.8.0        Last change: 2024 May 27
+*git-conflict.txt*        For Neovim >= 0.8.0        Last change: 2024 June 03
 
 ==============================================================================
 Table of Contents                             *git-conflict-table-of-contents*
@@ -124,8 +124,8 @@ The default mappings are:
 - ct — choose theirs
 - cb — choose both
 - c0 — choose none
-- [x — move to previous conflict
-- ]x — move to next conflict
+- ]x — move to previous conflict
+- [x — move to next conflict
 
 If you would rather not use these then you can specify your own mappings.
 
