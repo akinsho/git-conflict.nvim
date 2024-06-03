@@ -1,5 +1,23 @@
 # Changelog
 
+## [2.0.0](https://github.com/akinsho/git-conflict.nvim/compare/v1.3.0...v2.0.0) (2024-06-03)
+
+
+### ⚠ BREAKING CHANGES
+
+* **mapping:** swap prev and next mapping for conflicts ([#89](https://github.com/akinsho/git-conflict.nvim/issues/89))
+
+### Features
+
+* add support for git worktrees ([#81](https://github.com/akinsho/git-conflict.nvim/issues/81)) ([1371080](https://github.com/akinsho/git-conflict.nvim/commit/13710803346cfe468ce7be250d19c430866ba1bd))
+
+
+### Bug Fixes
+
+* extmarks missing from final line ([#87](https://github.com/akinsho/git-conflict.nvim/issues/87)) ([96458b8](https://github.com/akinsho/git-conflict.nvim/commit/96458b843795c6dd84f221188cccd3242328349e))
+* **mapping:** swap prev and next mapping for conflicts ([#89](https://github.com/akinsho/git-conflict.nvim/issues/89)) ([c57bbf0](https://github.com/akinsho/git-conflict.nvim/commit/c57bbf09e36e967272d60899113ac308ee55d2cd))
+* off-by-one error in find_position ([#86](https://github.com/akinsho/git-conflict.nvim/issues/86)) ([4ff00ae](https://github.com/akinsho/git-conflict.nvim/commit/4ff00aed1ef47d9b7ab16ca62563089c15723b14))
+
 ## [1.3.0](https://github.com/akinsho/git-conflict.nvim/compare/v1.2.2...v1.3.0) (2024-01-22)
 
 
