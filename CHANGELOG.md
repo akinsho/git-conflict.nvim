@@ -1,5 +1,12 @@
 # Changelog
 
+## [2.1.0](https://github.com/akinsho/git-conflict.nvim/compare/v2.0.0...v2.1.0) (2024-06-26)
+
+
+### Features
+
+* add visual mode mappings ([#78](https://github.com/akinsho/git-conflict.nvim/issues/78)) ([888bc31](https://github.com/akinsho/git-conflict.nvim/commit/888bc31a41abf511ab8611b25c72d971faf18cc7))
+
 ## [2.0.0](https://github.com/akinsho/git-conflict.nvim/compare/v1.3.0...v2.0.0) (2024-06-03)
 
 
