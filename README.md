@@ -41,6 +41,7 @@ I recommend using the {tag|version} field of your package manager, so your versi
     incoming = 'DiffAdd',
     current = 'DiffText',
   }
+  default_colors = false -- use default colors over the highlight colors
 }
 ```
 
