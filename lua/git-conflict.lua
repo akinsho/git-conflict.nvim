@@ -117,7 +117,7 @@ local conflict_middle = '^======='
 local conflict_end = '^>>>>>>>'
 local conflict_ancestor = '^|||||||'
 
-local DEFAULT_CURRENT_BG_COLOR = 4218238 -- #405d7e
+local DEFAULT_CURRENT_BG_COLOR = 4218238  -- #405d7e
 local DEFAULT_INCOMING_BG_COLOR = 3229523 -- #314753
 local DEFAULT_ANCESTOR_BG_COLOR = 6824314 -- #68217A
 -----------------------------------------------------------------------------//
@@ -385,7 +385,7 @@ end
 local function parse_buffer(bufnr, range_start, range_end)
   local lines = utils.get_buf_lines(range_start or 0, range_end or -1, bufnr)
   local prev_conflicts = visited_buffers[bufnr].positions ~= nil
-    and #visited_buffers[bufnr].positions > 0
+      and #visited_buffers[bufnr].positions > 0
   local has_conflict, positions = detect_conflicts(lines)
 
   update_visited_buffers(bufnr, positions)
@@ -507,10 +507,10 @@ end
 local function set_plug_mappings()
   local function opts(desc) return { silent = true, desc = 'Git Conflict: ' .. desc } end
 
-  map('n', '<Plug>(git-conflict-ours)', '<Cmd>GitConflictChooseOurs<CR>', opts('Choose Ours'))
-  map('n', '<Plug>(git-conflict-both)', '<Cmd>GitConflictChooseBoth<CR>', opts('Choose Both'))
-  map('n', '<Plug>(git-conflict-none)', '<Cmd>GitConflictChooseNone<CR>', opts('Choose None'))
-  map('n', '<Plug>(git-conflict-theirs)', '<Cmd>GitConflictChooseTheirs<CR>', opts('Choose Theirs'))
+  map({ 'n', 'v' }, '<Plug>(git-conflict-ours)', '<Cmd>GitConflictChooseOurs<CR>', opts('Choose Ours'))
+  map({ 'n', 'v' }, '<Plug>(git-conflict-both)', '<Cmd>GitConflictChooseBoth<CR>', opts('Choose Both'))
+  map({ 'n', 'v' }, '<Plug>(git-conflict-none)', '<Cmd>GitConflictChooseNone<CR>', opts('Choose None'))
+  map({ 'n', 'v' }, '<Plug>(git-conflict-theirs)', '<Cmd>GitConflictChooseTheirs<CR>', opts('Choose Theirs'))
   map(
     'n',
     '<Plug>(git-conflict-next-conflict)',
@@ -530,10 +530,12 @@ local function setup_buffer_mappings(bufnr)
     return { silent = true, buffer = bufnr, desc = 'Git Conflict: ' .. desc }
   end
 
-  map('n', config.default_mappings.ours, '<Plug>(git-conflict-ours)', opts('Choose Ours'))
-  map('n', config.default_mappings.both, '<Plug>(git-conflict-both)', opts('Choose Both'))
-  map('n', config.default_mappings.none, '<Plug>(git-conflict-none)', opts('Choose None'))
-  map('n', config.default_mappings.theirs, '<Plug>(git-conflict-theirs)', opts('Choose Theirs'))
+  map({ 'n', 'v' }, config.default_mappings.ours, '<Plug>(git-conflict-ours)', opts('Choose Ours'))
+  map({ 'n', 'v' }, config.default_mappings.both, '<Plug>(git-conflict-both)', opts('Choose Both'))
+  map({ 'n', 'v' }, config.default_mappings.none, '<Plug>(git-conflict-none)', opts('Choose None'))
+  map({ 'n', 'v' }, config.default_mappings.theirs, '<Plug>(git-conflict-theirs)', opts('Choose Theirs'))
+  map({ 'v', 'v' }, config.default_mappings.ours, '<Plug>(git-conflict-ours)', opts('Choose Ours'))
+  -- map('V', config.default_mappings.ours, '<Plug>(git-conflict-ours)', opts('Choose Ours'))
   map(
     'n',
     config.default_mappings.prev,
@@ -673,8 +675,8 @@ local function quickfix_items_from_positions(item, items, visited_buf)
   for _, pos in ipairs(visited_buf.positions) do
     for key, value in pairs(pos) do
       if
-        vim.tbl_contains({ name_map.ours, name_map.theirs, name_map.base }, key)
-        and not vim.tbl_isempty(value)
+          vim.tbl_contains({ name_map.ours, name_map.theirs, name_map.base }, key)
+          and not vim.tbl_isempty(value)
       then
         local lnum = value.range_start + 1
         local next_item = vim.deepcopy(item)
@@ -744,6 +746,53 @@ end
 ---@param side ConflictSide
 function M.choose(side)
   local bufnr = api.nvim_get_current_buf()
+  if vim.fn.mode() == 'v' or vim.fn.mode() == 'V' or vim.fn.mode() == '' then
+    vim.api.nvim_feedkeys(vim.api.nvim_replace_termcodes('<Esc>', true, false, true), 'n', true)
+    -- have to defer so that the < and > marks are set
+    vim.defer_fn(function()
+      local start = vim.api.nvim_buf_get_mark(0, '<')[1]
+      local finish = vim.api.nvim_buf_get_mark(0, '>')[1]
+      local position = find_position(bufnr, function(line, pos)
+        local left = pos.current.range_start >= start - 1
+        local right = pos.incoming.range_end <= finish + 1
+        return left and right
+      end)
+      while position ~= nil do
+        local lines = {}
+        if vim.tbl_contains({ SIDES.OURS, SIDES.THEIRS, SIDES.BASE }, side) then
+          local data = position[name_map[side]]
+          lines = utils.get_buf_lines(data.content_start, data.content_end + 1)
+        elseif side == SIDES.BOTH then
+          local first =
+              utils.get_buf_lines(position.current.content_start, position.current.content_end + 1)
+          local second =
+              utils.get_buf_lines(position.incoming.content_start, position.incoming.content_end + 1)
+          lines = vim.list_extend(first, second)
+        elseif side == SIDES.NONE then
+          lines = {}
+        else
+          return
+        end
+
+        local pos_start = position.current.range_start < 0 and 0 or position.current.range_start
+        local pos_end = position.incoming.range_end + 1
+
+        api.nvim_buf_set_lines(0, pos_start, pos_end, false, lines)
+        api.nvim_buf_del_extmark(0, NAMESPACE, position.marks.incoming.label)
+        api.nvim_buf_del_extmark(0, NAMESPACE, position.marks.current.label)
+        if position.marks.ancestor.label then
+          api.nvim_buf_del_extmark(0, NAMESPACE, position.marks.ancestor.label)
+        end
+        parse_buffer(bufnr)
+        position = find_position(bufnr, function(line, pos)
+          local left = pos.current.range_start >= start - 1
+          local right = pos.incoming.range_end <= finish + 1
+          return left and right
+        end)
+      end
+    end, 50)
+    return
+  end
   local position = get_current_position(bufnr)
   if not position then return end
   local lines = {}
@@ -752,9 +801,9 @@ function M.choose(side)
     lines = utils.get_buf_lines(data.content_start, data.content_end + 1)
   elseif side == SIDES.BOTH then
     local first =
-      utils.get_buf_lines(position.current.content_start, position.current.content_end + 1)
+        utils.get_buf_lines(position.current.content_start, position.current.content_end + 1)
     local second =
-      utils.get_buf_lines(position.incoming.content_start, position.incoming.content_end + 1)
+        utils.get_buf_lines(position.incoming.content_start, position.incoming.content_end + 1)
     lines = vim.list_extend(first, second)
   elseif side == SIDES.NONE then
     lines = {}
