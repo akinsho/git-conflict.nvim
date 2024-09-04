@@ -185,6 +185,7 @@ local function get_conflicted_files(dir, callback)
   job(cmd, function(data)
     local files = {}
     for _, filename in ipairs(data) do
+      if vim.fn.has('win32') or vim.fn.has('win64') then filename = filename:gsub('/', '\\') end
       if #filename > 0 then files[filename] = files[filename] or {} end
     end
     callback(files, dir)
