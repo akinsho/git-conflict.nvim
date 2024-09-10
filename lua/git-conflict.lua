@@ -111,6 +111,7 @@ local NAMESPACE = api.nvim_create_namespace('git-conflict')
 local AUGROUP_NAME = 'GitConflictCommands'
 
 local sep = package.config:sub(1, 1)
+local IS_WINDOWS = sep ~= '/'
 
 local conflict_start = '^<<<<<<<'
 local conflict_middle = '^======='
@@ -185,6 +186,7 @@ local function get_conflicted_files(dir, callback)
   job(cmd, function(data)
     local files = {}
     for _, filename in ipairs(data) do
+      if IS_WINDOWS then filename = filename:gsub('/', sep) end
       if #filename > 0 then files[filename] = files[filename] or {} end
     end
     callback(files, dir)
