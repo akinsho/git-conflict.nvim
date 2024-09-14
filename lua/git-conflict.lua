@@ -253,7 +253,7 @@ end
 local function highlight_conflicts(bufnr, positions, lines)
   M.clear(bufnr)
 
-  for _, position in ipairs(positions) do
+  for index, position in ipairs(positions) do
     local current_start = position.current.range_start
     local current_end = position.current.range_end
     local incoming_start = position.incoming.range_start
@@ -261,6 +261,8 @@ local function highlight_conflicts(bufnr, positions, lines)
     -- Add one since the index access in lines is 1 based
     local current_label = lines[current_start + 1] .. ' (Current changes)'
     local incoming_label = lines[incoming_end + 1] .. ' (Incoming changes)'
+
+    print("########### index = ", index, ", position = ", vim.inspect(position))
 
     local curr_label_id = draw_section_label(bufnr, CURRENT_LABEL_HL, current_label, current_start)
     local curr_id = hl_range(bufnr, CURRENT_HL, current_start, current_end + 1)
@@ -303,6 +305,7 @@ local function detect_conflicts(lines)
       }
     end
     if has_start and line:match(conflict_ancestor) then
+      print("######### 1st   block causes by line = ", line)
       has_ancestor = true
       position.ancestor.range_start = lnum
       position.ancestor.content_start = lnum + 1
@@ -324,6 +327,9 @@ local function detect_conflicts(lines)
       position.incoming.content_start = lnum + 1
     end
     if has_start and has_middle and line:match(conflict_end) then
+      -- TODO: There is a case where "if the file contains multiple marker" then it's broken
+      -- e.g. when doing 3 ways diff and there's nested conflicts within the BASE file
+      -- then it will causes abrupt position.current.range_end to be nil, causing "decoration" process crash
       position.incoming.range_end = lnum
       position.incoming.content_end = lnum - 1
       positions[#positions + 1] = position
