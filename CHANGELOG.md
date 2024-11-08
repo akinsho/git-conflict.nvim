@@ -1,5 +1,17 @@
 # Changelog
 
+## [2.1.0](https://github.com/akinsho/git-conflict.nvim/compare/v2.0.0...v2.1.0) (2024-11-08)
+
+
+### Features
+
+* add visual mode mappings ([#78](https://github.com/akinsho/git-conflict.nvim/issues/78)) ([888bc31](https://github.com/akinsho/git-conflict.nvim/commit/888bc31a41abf511ab8611b25c72d971faf18cc7))
+
+
+### Bug Fixes
+
+* windows path separator ([#93](https://github.com/akinsho/git-conflict.nvim/issues/93)) ([40ab009](https://github.com/akinsho/git-conflict.nvim/commit/40ab0095dcce61435128b5f3905664382b1c7e32))
+
 ## [2.0.0](https://github.com/akinsho/git-conflict.nvim/compare/v1.3.0...v2.0.0) (2024-06-03)
 
 
