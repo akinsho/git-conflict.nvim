@@ -351,12 +351,17 @@ local function find_position(bufnr, comparator, opts)
       local position = match.positions[i]
       if comparator(line, position) then return position end
     end
+    if opts.wrap and match.positions[#match.positions] then
+      return match.positions[#match.positions]
+    end
     return nil
   end
 
   for _, position in ipairs(match.positions) do
     if comparator(line, position) then return position end
   end
+
+  if opts and opts.wrap and match.positions[1] then return match.positions[1] end
   return nil
 end
 
@@ -725,9 +730,8 @@ end
 function M.find_next(side)
   local pos = find_position(
     0,
-    function(line, position)
-      return position.current.range_start >= line and position.incoming.range_end >= line
-    end
+    function(line, position) return line < position.current.range_start end,
+    { wrap = true }
   )
   set_cursor(pos, side)
 end
@@ -736,10 +740,8 @@ end
 function M.find_prev(side)
   local pos = find_position(
     0,
-    function(line, position)
-      return position.current.range_start <= line and position.incoming.range_end <= line
-    end,
-    { reverse = true }
+    function(line, position) return line > position.current.range_start end,
+    { wrap = true, reverse = true }
   )
   set_cursor(pos, side)
 end
