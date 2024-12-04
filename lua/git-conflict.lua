@@ -498,13 +498,13 @@ local function set_commands()
       end
     end)
   end, { nargs = 0 })
-  command('GitConflictChooseOurs', function() M.choose('ours') end, { nargs = 0 })
-  command('GitConflictChooseTheirs', function() M.choose('theirs') end, { nargs = 0 })
-  command('GitConflictChooseBoth', function() M.choose('both') end, { nargs = 0 })
-  command('GitConflictChooseBase', function() M.choose('base') end, { nargs = 0 })
-  command('GitConflictChooseNone', function() M.choose('none') end, { nargs = 0 })
-  command('GitConflictNextConflict', function() M.find_next('ours') end, { nargs = 0 })
-  command('GitConflictPrevConflict', function() M.find_prev('ours') end, { nargs = 0 })
+  command('GitConflictChooseOurs', '<Plug>(git-conflict-ours)', { nargs = 0 })
+  command('GitConflictChooseTheirs', '<Plug>(git-conflict-theirs)', { nargs = 0 })
+  command('GitConflictChooseBoth', '<Plug>(git-conflict-both)', { nargs = 0 })
+  command('GitConflictChooseBase', '<Plug>(git-conflict-base)', { nargs = 0 })
+  command('GitConflictChooseNone', '<Plug>(git-conflict-none)', { nargs = 0 })
+  command('GitConflictNextConflict', '<Plug>(git-conflict-next-conflict)', { nargs = 0 })
+  command('GitConflictPrevConflict', '<Plug>(git-conflict-prev-conflict)', { nargs = 0 })
 end
 
 -----------------------------------------------------------------------------//
@@ -514,20 +514,21 @@ end
 local function set_plug_mappings()
   local function opts(desc) return { silent = true, desc = 'Git Conflict: ' .. desc } end
 
-  map({ 'n', 'v' }, '<Plug>(git-conflict-ours)', '<Cmd>GitConflictChooseOurs<CR>', opts('Choose Ours'))
-  map({ 'n', 'v' }, '<Plug>(git-conflict-both)', '<Cmd>GitConflictChooseBoth<CR>', opts('Choose Both'))
-  map({ 'n', 'v' }, '<Plug>(git-conflict-none)', '<Cmd>GitConflictChooseNone<CR>', opts('Choose None'))
-  map({ 'n', 'v' }, '<Plug>(git-conflict-theirs)', '<Cmd>GitConflictChooseTheirs<CR>', opts('Choose Theirs'))
+  map({ 'n', 'v' }, '<Plug>(git-conflict-ours)', function() M.choose('ours') end, opts('Choose Ours'))
+  map({ 'n', 'v' }, '<Plug>(git-conflict-both)', function() M.choose('both') end, opts('Choose Both'))
+  map({ 'n', 'v' }, '<Plug>(git-conflict-base)', function() M.choose('base') end, opts('Choose Base'))
+  map({ 'n', 'v' }, '<Plug>(git-conflict-none)', function() M.choose('none') end, opts('Choose None'))
+  map({ 'n', 'v' }, '<Plug>(git-conflict-theirs)', function() M.choose('theirs') end, opts('Choose Theirs'))
   map(
     'n',
     '<Plug>(git-conflict-next-conflict)',
-    '<Cmd>GitConflictNextConflict<CR>',
+    function() M.find_next('ours') end,
     opts('Next Conflict')
   )
   map(
     'n',
     '<Plug>(git-conflict-prev-conflict)',
-    '<Cmd>GitConflictPrevConflict<CR>',
+    function() M.find_prev('ours') end,
     opts('Previous Conflict')
   )
 end
