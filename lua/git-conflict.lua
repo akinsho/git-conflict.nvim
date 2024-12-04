@@ -68,17 +68,19 @@ local job = utils.job
 
 --- @class GitConflictConfig
 --- @field default_mappings GitConflictMappings
+--- @field default_commands boolean
 --- @field disable_diagnostics boolean
 --- @field list_opener string|function
 --- @field highlights ConflictHighlights
 --- @field debug boolean
 
 --- @class GitConflictUserConfig
---- @field default_mappings boolean|GitConflictMappings
---- @field disable_diagnostics boolean
---- @field list_opener string|function
---- @field highlights ConflictHighlights
---- @field debug boolean
+--- @field default_mappings? boolean|GitConflictMappings
+--- @field default_commands? boolean
+--- @field disable_diagnostics? boolean
+--- @field list_opener? string|function
+--- @field highlights? ConflictHighlights
+--- @field debug? boolean
 
 -----------------------------------------------------------------------------//
 -- Constants
