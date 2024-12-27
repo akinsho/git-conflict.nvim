@@ -1,5 +1,13 @@
 # Changelog
 
+## [2.1.1](https://github.com/akinsho/git-conflict.nvim/compare/v2.1.0...v2.1.1) (2024-12-27)
+
+
+### Bug Fixes
+
+* **mappings:** Remove default_commands dependency from default_mappings ([#97](https://github.com/akinsho/git-conflict.nvim/issues/97)) ([8dd3b9a](https://github.com/akinsho/git-conflict.nvim/commit/8dd3b9a0f939ff31c4eaf61a194238d07f483f95))
+* **types:** add default_commands and make fields in user config optional ([#98](https://github.com/akinsho/git-conflict.nvim/issues/98)) ([a1badcd](https://github.com/akinsho/git-conflict.nvim/commit/a1badcd070d176172940eb55d9d59029dad1c5a6))
+
 ## [2.1.0](https://github.com/akinsho/git-conflict.nvim/compare/v2.0.0...v2.1.0) (2024-11-08)
 
 
