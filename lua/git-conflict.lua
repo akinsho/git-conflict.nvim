@@ -120,7 +120,7 @@ local conflict_middle = '^======='
 local conflict_end = '^>>>>>>>'
 local conflict_ancestor = '^|||||||'
 
-local DEFAULT_CURRENT_BG_COLOR = 4218238  -- #405d7e
+local DEFAULT_CURRENT_BG_COLOR = 4218238 -- #405d7e
 local DEFAULT_INCOMING_BG_COLOR = 3229523 -- #314753
 local DEFAULT_ANCESTOR_BG_COLOR = 6824314 -- #68217A
 -----------------------------------------------------------------------------//
@@ -252,11 +252,10 @@ end
 ---them when a buffer changes since otherwise we have to reparse the whole buffer constantly
 ---@param positions table
 ---@param lines string[]
-local function highlight_conflicts(positions, lines)
-  local bufnr = api.nvim_get_current_buf()
+local function highlight_conflicts(bufnr, positions, lines)
   M.clear(bufnr)
 
-  for _, position in ipairs(positions) do
+  for index, position in ipairs(positions) do
     local current_start = position.current.range_start
     local current_end = position.current.range_end
     local incoming_start = position.incoming.range_start
@@ -264,6 +263,8 @@ local function highlight_conflicts(positions, lines)
     -- Add one since the index access in lines is 1 based
     local current_label = lines[current_start + 1] .. ' (Current changes)'
     local incoming_label = lines[incoming_end + 1] .. ' (Incoming changes)'
+
+    print("########### index = ", index, ", position = ", vim.inspect(position))
 
     local curr_label_id = draw_section_label(bufnr, CURRENT_LABEL_HL, current_label, current_start)
     local curr_id = hl_range(bufnr, CURRENT_HL, current_start, current_end + 1)
@@ -306,6 +307,7 @@ local function detect_conflicts(lines)
       }
     end
     if has_start and line:match(conflict_ancestor) then
+      print("######### 1st   block causes by line = ", line)
       has_ancestor = true
       position.ancestor.range_start = lnum
       position.ancestor.content_start = lnum + 1
@@ -327,6 +329,9 @@ local function detect_conflicts(lines)
       position.incoming.content_start = lnum + 1
     end
     if has_start and has_middle and line:match(conflict_end) then
+      -- TODO: There is a case where "if the file contains multiple marker" then it's broken
+      -- e.g. when doing 3 ways diff and there's nested conflicts within the BASE file
+      -- then it will causes abrupt position.current.range_end to be nil, causing "decoration" process crash
       position.incoming.range_end = lnum
       position.incoming.content_end = lnum - 1
       positions[#positions + 1] = position
@@ -399,13 +404,14 @@ local function parse_buffer(bufnr, range_start, range_end)
 
   update_visited_buffers(bufnr, positions)
   if has_conflict then
-    highlight_conflicts(positions, lines)
+    highlight_conflicts(bufnr, positions, lines)
   else
     M.clear(bufnr)
   end
+
   if prev_conflicts ~= has_conflict or not vim.b[bufnr].conflict_mappings_set then
     local pattern = has_conflict and 'GitConflictDetected' or 'GitConflictResolved'
-    api.nvim_exec_autocmds('User', { pattern = pattern })
+    api.nvim_exec_autocmds('User', { pattern = pattern, data = { bufnr = bufnr } })
   end
 end
 
@@ -650,10 +656,10 @@ function M.setup(user_config)
   api.nvim_create_autocmd('User', {
     group = AUGROUP_NAME,
     pattern = 'GitConflictDetected',
-    callback = function()
-      local bufnr = api.nvim_get_current_buf()
-      if config.disable_diagnostics then vim.diagnostic.disable(bufnr) end
+    callback = function(args)
+      local bufnr = args.data.bufnr
       if config.default_mappings then setup_buffer_mappings(bufnr) end
+      if config.disable_diagnostics then vim.diagnostic.disable(bufnr) end
     end,
   })
 
@@ -684,8 +690,7 @@ local function quickfix_items_from_positions(item, items, visited_buf)
   if vim.tbl_isempty(visited_buf.positions) then return end
   for _, pos in ipairs(visited_buf.positions) do
     for key, value in pairs(pos) do
-      if
-          vim.tbl_contains({ name_map.ours, name_map.theirs, name_map.base }, key)
+      if vim.tbl_contains({ name_map.ours, name_map.theirs, name_map.base }, key)
           and not vim.tbl_isempty(value)
       then
         local lnum = value.range_start + 1
@@ -770,10 +775,8 @@ function M.choose(side)
           local data = position[name_map[side]]
           lines = utils.get_buf_lines(data.content_start, data.content_end + 1)
         elseif side == SIDES.BOTH then
-          local first =
-              utils.get_buf_lines(position.current.content_start, position.current.content_end + 1)
-          local second =
-              utils.get_buf_lines(position.incoming.content_start, position.incoming.content_end + 1)
+          local first = utils.get_buf_lines(position.current.content_start, position.current.content_end + 1)
+          local second = utils.get_buf_lines(position.incoming.content_start, position.incoming.content_end + 1)
           lines = vim.list_extend(first, second)
         elseif side == SIDES.NONE then
           lines = {}
@@ -807,10 +810,8 @@ function M.choose(side)
     local data = position[name_map[side]]
     lines = utils.get_buf_lines(data.content_start, data.content_end + 1)
   elseif side == SIDES.BOTH then
-    local first =
-        utils.get_buf_lines(position.current.content_start, position.current.content_end + 1)
-    local second =
-        utils.get_buf_lines(position.incoming.content_start, position.incoming.content_end + 1)
+    local first = utils.get_buf_lines(position.current.content_start, position.current.content_end + 1)
+    local second = utils.get_buf_lines(position.incoming.content_start, position.incoming.content_end + 1)
     lines = vim.list_extend(first, second)
   elseif side == SIDES.NONE then
     lines = {}
