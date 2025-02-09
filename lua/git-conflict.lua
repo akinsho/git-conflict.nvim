@@ -173,7 +173,7 @@ local state = {
 ---@param dir any
 ---@param callback fun(data: string)
 local function get_git_root(dir, callback)
-  job({ 'git', '-C', dir, 'rev-parse', '--show-toplevel' }, function(data) callback(data[1]) end)
+  job({ 'sl', 'root' }, function(data) callback(data[1]) end)
 end
 
 --- Get a list of the conflicted files within the specified directory
@@ -184,10 +184,11 @@ end
 ---@param dir string?
 ---@param callback fun(files: table<string, integer[]>, string)
 local function get_conflicted_files(dir, callback)
-  local cmd = { 'git', '-C', dir, 'diff', ('--line-prefix=%s%s'):format(dir, sep), '--name-only', '--diff-filter=U' }
+  local cmd = { 'sl', 'resolve', dir, 'diff', '--list', '--no-status', '--root-relative', '--include=set:unresolved()' }
   job(cmd, function(data)
     local files = {}
     for _, filename in ipairs(data) do
+      filename = dir .. sep .. filename
       if IS_WINDOWS then filename = filename:gsub('/', sep) end
       if #filename > 0 then files[filename] = files[filename] or {} end
     end
