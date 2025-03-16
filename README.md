@@ -13,7 +13,7 @@ encounter some bugs during usage.
 ## Requirements
 
 - `git`
-- `nvim 0.7+`
+- `nvim 0.10+`
 
 ## Installation
 
