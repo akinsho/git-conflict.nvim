@@ -500,13 +500,13 @@ local function set_commands()
       end
     end)
   end, { nargs = 0 })
-  command('GitConflictChooseOurs', '<Plug>(git-conflict-ours)', { nargs = 0 })
-  command('GitConflictChooseTheirs', '<Plug>(git-conflict-theirs)', { nargs = 0 })
-  command('GitConflictChooseBoth', '<Plug>(git-conflict-both)', { nargs = 0 })
-  command('GitConflictChooseBase', '<Plug>(git-conflict-base)', { nargs = 0 })
-  command('GitConflictChooseNone', '<Plug>(git-conflict-none)', { nargs = 0 })
-  command('GitConflictNextConflict', '<Plug>(git-conflict-next-conflict)', { nargs = 0 })
-  command('GitConflictPrevConflict', '<Plug>(git-conflict-prev-conflict)', { nargs = 0 })
+  command('GitConflictChooseOurs', function() M.choose('ours') end, { nargs = 0 })
+  command('GitConflictChooseTheirs', function() M.choose('theirs') end, { nargs = 0 })
+  command('GitConflictChooseBoth', function() M.choose('both') end, { nargs = 0 })
+  command('GitConflictChooseBase', function() M.choose('base') end, { nargs = 0 })
+  command('GitConflictChooseNone', function() M.choose('none') end, { nargs = 0 })
+  command('GitConflictNextConflict', function() M.find_next('ours') end, { nargs = 0 })
+  command('GitConflictPrevConflict', function() M.find_prev('ours') end, { nargs = 0 })
 end
 
 -----------------------------------------------------------------------------//
