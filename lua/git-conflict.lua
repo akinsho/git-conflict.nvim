@@ -108,6 +108,7 @@ local ANCESTOR_HL = 'GitConflictAncestor'
 local CURRENT_LABEL_HL = 'GitConflictCurrentLabel'
 local INCOMING_LABEL_HL = 'GitConflictIncomingLabel'
 local ANCESTOR_LABEL_HL = 'GitConflictAncestorLabel'
+local MIDDLE_LABEL_HL = 'GitConflictMiddleLabel'
 local PRIORITY = vim.highlight.priorities.user
 local NAMESPACE = api.nvim_create_namespace('git-conflict')
 local AUGROUP_NAME = 'GitConflictCommands'
@@ -259,20 +260,24 @@ local function highlight_conflicts(positions, lines)
   for _, position in ipairs(positions) do
     local current_start = position.current.range_start
     local current_end = position.current.range_end
+    local middle_start = position.middle.range_start
     local incoming_start = position.incoming.range_start
     local incoming_end = position.incoming.range_end
     -- Add one since the index access in lines is 1 based
     local current_label = lines[current_start + 1] .. ' (Current changes)'
+    local middle_label = lines[middle_start + 1]
     local incoming_label = lines[incoming_end + 1] .. ' (Incoming changes)'
 
     local curr_label_id = draw_section_label(bufnr, CURRENT_LABEL_HL, current_label, current_start)
     local curr_id = hl_range(bufnr, CURRENT_HL, current_start, current_end + 1)
+    local middle_label_id = draw_section_label(bufnr, MIDDLE_LABEL_HL, middle_label, middle_start)
     local inc_id = hl_range(bufnr, INCOMING_HL, incoming_start, incoming_end + 1)
     local inc_label_id = draw_section_label(bufnr, INCOMING_LABEL_HL, incoming_label, incoming_end)
 
     position.marks = {
       current = { label = curr_label_id, content = curr_id },
       incoming = { label = inc_label_id, content = inc_id },
+      middle = { label = middle_label_id },
       ancestor = {},
     }
     if not vim.tbl_isempty(position.ancestor) then
