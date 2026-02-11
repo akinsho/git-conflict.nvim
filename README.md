@@ -128,6 +128,39 @@ vim.keymap.set('n', ']x', '<Plug>(git-conflict-next-conflict)')
 
 </details>
 
+<details><summary>example LazyVim key configuration</summary>
+
+```lua
+return {
+  {
+    "akinsho/git-conflict.nvim",
+    event = "BufReadPre",
+    opts = {
+      default_mappings = false,
+    },
+    keys = {
+      { "<leader>gco", "<Plug>(git-conflict-ours)", desc = "Choose Ours" },
+      { "<leader>gct", "<Plug>(git-conflict-theirs)", desc = "Choose Theirs" },
+      { "<leader>gcb", "<Plug>(git-conflict-both)", desc = "Choose Both" },
+      { "<leader>gc0", "<Plug>(git-conflict-none)", desc = "Choose None" },
+      { "]x", "<Plug>(git-conflict-next-conflict)", desc = "Next Conflict" },
+      { "[x", "<Plug>(git-conflict-prev-conflict)", desc = "Previous Conflict" },
+      { "<leader>gcq", "<cmd>GitConflictListQf<cr>", desc = "Conflicts to Quickfix" },
+    },
+  },
+  {
+    "folke/which-key.nvim",
+    opts = {
+      spec = {
+        { "<leader>gc", group = "conflict" },
+      },
+    },
+  },
+}
+```
+
+</details>
+
 ## API
 
 This plugin exposes an API to extract some of the data it collects for other
