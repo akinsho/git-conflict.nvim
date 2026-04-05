@@ -108,7 +108,7 @@ local ANCESTOR_HL = 'GitConflictAncestor'
 local CURRENT_LABEL_HL = 'GitConflictCurrentLabel'
 local INCOMING_LABEL_HL = 'GitConflictIncomingLabel'
 local ANCESTOR_LABEL_HL = 'GitConflictAncestorLabel'
-local PRIORITY = vim.highlight.priorities.user
+local PRIORITY = vim.hl.priorities.user
 local NAMESPACE = api.nvim_create_namespace('git-conflict')
 local AUGROUP_NAME = 'GitConflictCommands'
 
@@ -629,8 +629,8 @@ function M.setup(user_config)
   api.nvim_create_autocmd({ 'VimEnter', 'BufRead', 'SessionLoadPost', 'DirChanged' }, {
     group = AUGROUP_NAME,
     callback = function(args)
-      local gitdir = fn.getcwd() .. sep .. '.git'
-      if not vim.loop.fs_stat(gitdir) or state.current_watcher_dir == fn.getcwd() then return end
+      local gitdir = vim.fs.find('.git', { upward = true, path = fn.getcwd() })[1]
+      if not gitdir or not vim.loop.fs_stat(gitdir) or state.current_watcher_dir == fn.getcwd() then return end
       stop_running_watchers(gitdir)
       fetch_conflicts(args.buf)
       throttled_watcher(gitdir)
@@ -652,7 +652,7 @@ function M.setup(user_config)
     pattern = 'GitConflictDetected',
     callback = function()
       local bufnr = api.nvim_get_current_buf()
-      if config.disable_diagnostics then vim.diagnostic.disable(bufnr) end
+      if config.disable_diagnostics then vim.diagnostic.enable(false, { bufnr = bufnr }) end
       if config.default_mappings then setup_buffer_mappings(bufnr) end
     end,
   })
@@ -662,7 +662,7 @@ function M.setup(user_config)
     pattern = 'GitConflictResolved',
     callback = function()
       local bufnr = api.nvim_get_current_buf()
-      if config.disable_diagnostics then vim.diagnostic.enable(bufnr) end
+      if config.disable_diagnostics then vim.diagnostic.enable(true, { bufnr = bufnr }) end
       if config.default_mappings then clear_buffer_mappings(bufnr) end
     end,
   })
