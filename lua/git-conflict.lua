@@ -70,6 +70,7 @@ local job = utils.job
 --- @field default_mappings GitConflictMappings
 --- @field default_commands boolean
 --- @field disable_diagnostics boolean
+--- @field jump_to_next_conflict boolean
 --- @field list_opener string|function
 --- @field highlights ConflictHighlights
 --- @field debug boolean
@@ -78,6 +79,7 @@ local job = utils.job
 --- @field default_mappings? boolean|GitConflictMappings
 --- @field default_commands? boolean
 --- @field disable_diagnostics? boolean
+--- @field jump_to_next_conflict? boolean
 --- @field list_opener? string|function
 --- @field highlights? ConflictHighlights
 --- @field debug? boolean
@@ -141,6 +143,7 @@ local config = {
   default_mappings = DEFAULT_MAPPINGS,
   default_commands = true,
   disable_diagnostics = false,
+  jump_to_next_conflict = false,
   list_opener = 'copen',
   highlights = {
     current = 'DiffText',
@@ -764,6 +767,7 @@ function M.choose(side)
         local right = pos.incoming.range_end <= finish + 1
         return left and right
       end)
+      if not position then return end
       while position ~= nil do
         local lines = {}
         if vim.tbl_contains({ SIDES.OURS, SIDES.THEIRS, SIDES.BASE }, side) then
@@ -785,6 +789,7 @@ function M.choose(side)
         local pos_end = position.incoming.range_end + 1
 
         api.nvim_buf_set_lines(0, pos_start, pos_end, false, lines)
+        finish = finish + #lines - (pos_end - pos_start)
         api.nvim_buf_del_extmark(0, NAMESPACE, position.marks.incoming.label)
         api.nvim_buf_del_extmark(0, NAMESPACE, position.marks.current.label)
         if position.marks.ancestor.label then
@@ -797,6 +802,7 @@ function M.choose(side)
           return left and right
         end)
       end
+      if config.jump_to_next_conflict then M.find_next(SIDES.OURS) end
     end, 50)
     return
   end
@@ -828,6 +834,7 @@ function M.choose(side)
     api.nvim_buf_del_extmark(0, NAMESPACE, position.marks.ancestor.label)
   end
   parse_buffer(bufnr)
+  if config.jump_to_next_conflict then M.find_next(SIDES.OURS) end
 end
 
 function M.debug_watchers() vim.pretty_print({ watchers = watchers }) end
